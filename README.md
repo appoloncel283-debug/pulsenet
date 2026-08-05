@@ -31,10 +31,11 @@ Click **Download for Windows** above to get `PulseNet.exe`. No Go installation i
 
 ### PowerShell installer
 
-Download `Install-PulseNet.ps1`, inspect it, and run:
+Download `Install-PulseNet.ps1`, inspect it, remove the browser download block, and run it:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\Install-PulseNet.ps1
+Unblock-File -LiteralPath .\Install-PulseNet.ps1
+.\Install-PulseNet.ps1
 ```
 
 The guided installer:
