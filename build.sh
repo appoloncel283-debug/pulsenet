@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 set -eu
-VERSION="${VERSION:-2.3.0}"
+VERSION="${VERSION:-2.4.0}"
 mkdir -p bin
 go test ./...
 go vet ./...
