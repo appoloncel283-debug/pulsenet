@@ -68,8 +68,9 @@ jobs:
           foreach ($path in @('Install-PulseNet.ps1', 'Uninstall-PulseNet.ps1')) {
             $tokens = $null
             $errors = $null
+            $resolvedPath = (Resolve-Path $path).Path
             [void][System.Management.Automation.Language.Parser]::ParseFile(
-              (Resolve-Path $path),
+              $resolvedPath,
               [ref]$tokens,
               [ref]$errors
             )
