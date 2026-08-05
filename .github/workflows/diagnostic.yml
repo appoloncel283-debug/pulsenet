@@ -20,7 +20,7 @@ jobs:
           go-version: "1.23.x"
           cache: true
 
-      - name: Run diagnostic build
+      - name: Run Go diagnostics
         id: diagnostic
         shell: bash
         run: |
@@ -30,7 +30,8 @@ jobs:
             echo
             echo "== gofmt =="
             gofmt -w ./cmd ./internal
-            echo "gofmt exit: $?"
+            format_exit=$?
+            echo "gofmt exit: $format_exit"
             echo
             echo "== go test =="
             go test ./...
@@ -59,11 +60,11 @@ jobs:
             fi
             echo "smoke exit: $smoke_exit"
             echo
-            if [ "$test_exit" -eq 0 ] && [ "$vet_exit" -eq 0 ] && [ "$build_exit" -eq 0 ] && [ "$smoke_exit" -eq 0 ]; then
-              echo "RESULT=SUCCESS"
+            if [ "$format_exit" -eq 0 ] && [ "$test_exit" -eq 0 ] && [ "$vet_exit" -eq 0 ] && [ "$build_exit" -eq 0 ] && [ "$smoke_exit" -eq 0 ]; then
+              echo "GO_RESULT=SUCCESS"
               final_exit=0
             else
-              echo "RESULT=FAILURE"
+              echo "GO_RESULT=FAILURE"
               final_exit=1
             fi
           } > diagnostic.txt 2>&1
@@ -71,19 +72,59 @@ jobs:
           echo "exit_code=$final_exit" >> "$GITHUB_OUTPUT"
           exit 0
 
+      - name: Run PowerShell diagnostics
+        id: powershell
+        shell: pwsh
+        run: |
+          $failed = $false
+          $lines = [System.Collections.Generic.List[string]]::new()
+          $lines.Add('== PowerShell parser ==')
+          foreach ($path in @('Install-PulseNet.ps1', 'Uninstall-PulseNet.ps1')) {
+            $tokens = $null
+            $errors = $null
+            $resolvedPath = (Resolve-Path $path).Path
+            [void][System.Management.Automation.Language.Parser]::ParseFile($resolvedPath, [ref]$tokens, [ref]$errors)
+            if ($errors.Count -eq 0) {
+              $lines.Add("$path`: OK")
+            }
+            else {
+              $failed = $true
+              $lines.Add("$path`: FAILED")
+              foreach ($errorItem in $errors) {
+                $lines.Add("  line $($errorItem.Extent.StartLineNumber): $($errorItem.Message)")
+              }
+            }
+          }
+          $lines | Set-Content -LiteralPath ps-diagnostic.txt -Encoding UTF8
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($failed) {
+            'exit_code=1' | Add-Content -LiteralPath $env:GITHUB_OUTPUT
+          }
+          else {
+            'exit_code=0' | Add-Content -LiteralPath $env:GITHUB_OUTPUT
+          }
+          exit 0
+
       - name: Publish diagnostic issue
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          GO_EXIT: ${{ steps.diagnostic.outputs.exit_code }}
+          PS_EXIT: ${{ steps.powershell.outputs.exit_code }}
         run: |
           title="Build diagnostic ${GITHUB_SHA::12}"
           {
             echo '```text'
             sed -n '1,500p' diagnostic.txt
+            echo
+            sed -n '1,200p' ps-diagnostic.txt
+            echo
+            echo "Go exit: $GO_EXIT"
+            echo "PowerShell exit: $PS_EXIT"
             echo '```'
           } > issue-body.md
           gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file issue-body.md
 
       - name: Fail when verification failed
-        if: steps.diagnostic.outputs.exit_code != '0'
+        if: steps.diagnostic.outputs.exit_code != '0' || steps.powershell.outputs.exit_code != '0'
         run: exit 1
