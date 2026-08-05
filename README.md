@@ -3,25 +3,25 @@
 </p>
 
 <p align="center">
-  A focused network diagnostics toolkit for websites, servers, DNS, TLS, HTTP, page snapshots, and local web-server logs.
+  Practical network diagnostics for websites, servers, DNS, TLS, HTTP, page snapshots, and local web-server logs.
 </p>
 
 <p align="center">
-  <a href="https://github.com/appoloncel283-debug/pulsenet/releases/download/latest/Install-PulseNet.ps1"><img alt="Download PulseNet for Windows" src="https://img.shields.io/badge/Download_for_Windows-Installer-0078D4?style=for-the-badge&logo=windows"></a>
+  <a href="https://github.com/appoloncel283-debug/pulsenet/releases/latest/download/Install-PulseNet.ps1"><img alt="Download PulseNet for Windows" src="https://img.shields.io/badge/Download_for_Windows-Installer-0078D4?style=for-the-badge&logo=windows"></a>
   <a href="https://github.com/appoloncel283-debug/pulsenet/archive/refs/heads/main.zip"><img alt="Download source code" src="https://img.shields.io/badge/Download-Source_Code_ZIP-181717?style=for-the-badge&logo=github"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/appoloncel283-debug/pulsenet/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/appoloncel283-debug/pulsenet/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="LICENSE"><img alt="Source-available license" src="https://img.shields.io/badge/license-source--available%20%7C%20no%20modifications-orange.svg"></a>
+  <a href="LICENSE"><img alt="Source-available no-modification license" src="https://img.shields.io/badge/license-source--available%20%7C%20no%20modifications-orange.svg"></a>
   <img alt="Go 1.23+" src="https://img.shields.io/badge/Go-1.23%2B-00ADD8.svg">
 </p>
 
-## Download and install
+## Install on Windows
 
-Click **Download for Windows** above. The button downloads the official guided Windows installer.
+Click **Download for Windows** above. The button downloads the official guided installer.
 
-After downloading, inspect the file and run:
+Review the downloaded script, then run it from PowerShell:
 
 ```powershell
 Unblock-File -LiteralPath .\Install-PulseNet.ps1
@@ -30,13 +30,14 @@ Unblock-File -LiteralPath .\Install-PulseNet.ps1
 
 The installer:
 
-- downloads the latest official `PulseNet.exe`;
-- verifies its SHA-256 checksum before installation;
+- resolves one exact GitHub release tag before downloading anything;
+- downloads the executable, uninstaller, and checksum manifest from that same release;
+- verifies SHA-256 before installing;
 - installs only for the current Windows user;
-- can add `pulsenet` to the user PATH;
-- can install optional short commands: `pn`, `pncheck`, `pnlogs`, `pndump`, and `pnwatch`;
-- can create a Start Menu shortcut;
-- registers a user-level uninstaller in Windows Settings.
+- optionally adds `pulsenet` to the user PATH;
+- optionally installs `pn`, `pncheck`, `pnlogs`, `pndump`, and `pnwatch`;
+- optionally creates a Start Menu shortcut;
+- registers an uninstaller in Windows Settings.
 
 Silent installation with quick commands:
 
@@ -50,65 +51,24 @@ Custom installation folder:
 .\Install-PulseNet.ps1 -InstallDirectory D:\Tools\PulseNet
 ```
 
-Uninstall from **Windows Settings → Apps → Installed apps → PulseNet**, or run `Uninstall-PulseNet.ps1` from the installation folder.
+A portable `PulseNet.exe`, packaged Windows builds, Linux builds, macOS builds, and `SHA256SUMS.txt` are available on the [Releases](https://github.com/appoloncel283-debug/pulsenet/releases) page.
 
-A portable `PulseNet.exe` and Linux/macOS builds remain available on the [Releases](https://github.com/appoloncel283-debug/pulsenet/releases) page.
-
-PulseNet is currently unsigned, so Windows SmartScreen may display an unknown-publisher warning. Verify the SHA-256 checksum attached to the release before running downloaded files.
-
-### Source code
-
-Click **Source Code ZIP** to inspect the complete source or compile an unmodified copy for personal or internal use. Modification, derivative works, redistribution, and repackaging require prior written permission under the repository license.
-
-## Why PulseNet
-
-PulseNet follows the same path a real request takes and reports where it breaks:
-
-**DNS → TCP → TLS → HTTP → browser security headers → recommendations**
-
-It also includes practical website-maintenance tools:
-
-- **Site dump** saves one public HTTP response to a local folder with the body, redacted headers, metadata, redirects, and SHA-256 hash.
-- **Log viewer** reads local Nginx, Apache, JSONL, and plain-text logs with filters and live follow mode.
-
-PulseNet does not collect telemetry and does not silently upload reports, dumps, or logs.
+PulseNet is currently unsigned, so Windows may display an unknown-publisher warning.
 
 ## Features
 
-- Full diagnosis with a health score, verdict, and actionable recommendations.
-- DNS comparison across the system resolver, Cloudflare, and Google.
-- DNS records: A, AAAA, CNAME, MX, NS, TXT, and PTR.
-- TCP stability checks with success rate, latency, loss, and jitter.
-- TLS inspection with protocol, cipher, ALPN, certificate chain, expiry, hostname validation, and OCSP stapling status.
-- HTTP phase timings including DNS, connect, TLS, TTFB, and total request time.
-- Security-header audit with grades and remediation notes.
+- Full DNS → TCP → TLS → HTTP diagnosis with a score and recommendations.
+- DNS records and comparison between the system resolver, Cloudflare, and Google.
+- TCP latency, loss, and jitter checks.
+- TLS protocol, cipher, ALPN, certificate chain, expiry, hostname, and OCSP details.
+- HTTP DNS/connect/TLS/TTFB/total timing breakdown.
+- Browser security-header audit.
 - Explicit bounded TCP port checks.
-- Controlled HTTP benchmark with p50/p90/p95/p99 latency and throughput.
+- Controlled HTTP benchmark with latency percentiles and throughput.
 - Availability monitoring with optional CSV logging.
 - Public page snapshots with size limits and sensitive-header redaction.
-- Local website-log viewer with filters, JSON output, and follow mode.
-- Route tracing through the operating-system tool.
-- JSON and text diagnostic reports.
-- Interactive terminal interface.
-- Verified per-user Windows installer with optional PATH and quick-command setup.
-
-## Quick start
-
-```powershell
-pulsenet
-pulsenet diagnose example.com
-pulsenet dump https://example.com
-pulsenet logs C:\nginx\logs\access.log --status 5xx --follow
-```
-
-With optional quick commands:
-
-```powershell
-pn
-pncheck example.com
-pndump https://example.com
-pnlogs C:\nginx\logs\access.log --status 5xx --follow
-```
+- Local Nginx, Apache, JSONL, and plain-text log viewing with filters and follow mode.
+- Route tracing, JSON reports, text reports, and an interactive terminal interface.
 
 ## Commands
 
@@ -127,27 +87,15 @@ pulsenet trace <host>                      route trace
 pulsenet support                           support address
 ```
 
-### Site dump examples
+Examples:
 
-```bash
-pulsenet dump https://example.com
-pulsenet dump https://example.com --output snapshots/example --max-mb 32
-pulsenet dump https://example.com --json
+```powershell
+pulsenet diagnose example.com --report report.txt --json report.json
+pulsenet dump https://example.com --output snapshots\example
+pulsenet logs C:\nginx\logs\access.log --status 5xx --follow
+pulsenet ports 192.168.1.20 --ports 22,80,443,8000-8010
+pulsenet benchmark https://example.com --requests 100 --concurrency 10
 ```
-
-A dump stores one public response. It is deliberately not a crawler and does not copy an entire website or bypass authentication. `Set-Cookie`, `WWW-Authenticate`, and proxy-authentication response headers are redacted.
-
-### Website log examples
-
-```bash
-pulsenet logs /var/log/nginx/access.log
-pulsenet logs /var/log/nginx/access.log --status 5xx --follow
-pulsenet logs /var/log/nginx/error.log --level error --contains upstream
-pulsenet logs C:\nginx\logs\access.log --method POST --request-path /api --lines 250
-pulsenet logs /var/log/nginx/access.log --status 400-599 --json
-```
-
-The log viewer reads files available on the current computer. To inspect production logs, run PulseNet on the server or securely copy the log file first; it does not attempt to obtain private server logs from a public website.
 
 Detailed options are documented in [docs/COMMANDS.md](docs/COMMANDS.md).
 
@@ -159,20 +107,21 @@ Go 1.23 or newer is required.
 git clone https://github.com/appoloncel283-debug/pulsenet.git
 cd pulsenet
 go test ./...
+go vet ./...
 go build -o pulsenet ./cmd/pulsenet
 ```
 
-## Safety and scope
+## Safety and privacy
 
-The `ports` command checks one host and requires an explicit port list. It accepts at most 128 unique ports per run and limits concurrency. Use it only on systems you own or are authorized to test.
+Use port checks and benchmarks only on systems you own or are authorized to test. The log viewer reads files already available on the current computer; it does not obtain private logs from a public website.
 
-The `benchmark` command generates real HTTP traffic. Start with a small request count and use it only against services you control or have permission to test.
+PulseNet does not collect telemetry and does not silently upload reports, dumps, or logs. DNS comparison sends the queried hostname to the selected public resolvers. HTTP and TLS checks connect to the target supplied by the user.
 
-The `dump` command retrieves the public response returned to a normal unauthenticated GET request. Respect site terms, robots policies where applicable, copyright, and local law.
+## Source availability and license
 
-## Privacy
+The source code is available for inspection, security review, education, evaluation, and compilation of an unmodified personal or internal copy.
 
-PulseNet stores data only when you explicitly request a report, CSV, site dump, or other output file. DNS comparison sends the queried hostname to the selected public resolvers. HTTP and TLS checks connect directly to the target you provide. Environment proxy settings are honored.
+Modification, derivative works, redistribution, repackaging, sublicensing, and commercial exploitation are not permitted without prior written permission. See the [PulseNet Source-Available No-Modification License 1.1](LICENSE).
 
 ## Support the project
 
@@ -187,11 +136,3 @@ TGVDhCbDKEnWV5BVrUtMicjhwMiJVUYSSh
 </p>
 
 Always verify that the selected transfer network is **TRC20** before sending.
-
-## Feedback
-
-Bug reports are welcome. Code contributions and modified versions require prior written permission from the copyright holder. See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## License
-
-PulseNet is source-available under the [PulseNet Source-Available License 1.0](LICENSE). The license permits use of official unmodified releases and source inspection, but does not permit modification or derivative works without prior written permission.
