@@ -1,21 +1,44 @@
-MIT License
+PulseNet Source-Available License 1.0
 
-Copyright (c) 2026 PulseNet contributors
+Copyright (c) 2026 appoloncel283-debug. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This license applies to PulseNet versions first published with this license.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. Permitted use
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+You may:
+
+- Download and run official, unmodified PulseNet release binaries for personal or internal business use.
+- View the source code for inspection, security review, education, and evaluation.
+- Compile an unmodified copy of the source code for your own personal or internal use.
+- Make reasonable backup copies of unmodified official release binaries.
+
+2. No modification or derivative works
+
+You may not modify, adapt, translate, patch, merge, transform, or create derivative works based on the source code or binaries, in whole or in part, without prior written permission from the copyright holder.
+
+3. No redistribution or commercial exploitation
+
+Without prior written permission from the copyright holder, you may not redistribute, republish, mirror, repackage, sublicense, sell, rent, lease, monetize, or provide PulseNet or substantial portions of it to third parties. You may link to the official repository or official release downloads.
+
+4. Notices and identity
+
+You may not remove or alter copyright, license, attribution, project identity, or support notices. You may not use the PulseNet name, logo, or repository identity to imply endorsement, affiliation, or an official modified release.
+
+5. Exceptions
+
+The copyright holder may grant additional permissions in a separate written agreement. Permissions not expressly granted by this license are reserved.
+
+6. Hosting platform terms and legal exceptions
+
+This license does not limit rights that must be provided by the hosting platform's terms of service or rights that cannot legally be restricted under applicable law.
+
+7. Termination
+
+Your permissions under this license terminate automatically if you violate its terms. On termination, you must stop using and delete unauthorized copies, modifications, and derivative works.
+
+8. No warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM OR RELATED TO THE SOFTWARE OR ITS USE.
+
+This is a source-available license and is not an open-source license.
