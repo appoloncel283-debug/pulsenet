@@ -53,7 +53,7 @@ jobs:
           GOARCH: ${{ matrix.arch }}
           EXT: ${{ matrix.ext }}
           CGO_ENABLED: 0
-          VERSION: 2.0.0
+          VERSION: 2.1.0
         run: |
           mkdir -p dist
           BASE="pulsenet-${GOOS}-${GOARCH}"
@@ -101,17 +101,19 @@ jobs:
 
       - name: Prepare release notes
         run: |
-          cat > RELEASE_NOTES.md <<'EOF'
+          cat > RELEASE_NOTES.md <<'NOTES'
           ## Downloads
 
           **Most Windows computers:** download `PulseNet.exe` and open it.
+
+          PulseNet 2.1 adds public page snapshots and a local website-log viewer with filtering and live follow mode.
 
           A packaged Windows ZIP, architecture-specific builds, Linux builds, macOS builds, and SHA-256 checksums are also attached below.
 
           The complete source code remains available in the repository for modification and custom builds.
 
           > PulseNet is currently unsigned. Windows SmartScreen may show an unknown-publisher warning.
-          EOF
+          NOTES
 
       - name: Publish downloadable applications
         env:
