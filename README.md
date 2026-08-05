@@ -8,18 +8,19 @@
 
 <p align="center">
   <a href="https://github.com/appoloncel283-debug/pulsenet/releases/download/latest/PulseNet.exe"><img alt="Download PulseNet for Windows" src="https://img.shields.io/badge/Download_for_Windows-PulseNet.exe-0078D4?style=for-the-badge&logo=windows"></a>
+  <a href="https://github.com/appoloncel283-debug/pulsenet/releases/download/latest/Install-PulseNet.ps1"><img alt="PowerShell installer" src="https://img.shields.io/badge/PowerShell-Installer-5391FE?style=for-the-badge&logo=powershell"></a>
   <a href="https://github.com/appoloncel283-debug/pulsenet/archive/refs/heads/main.zip"><img alt="Download source code" src="https://img.shields.io/badge/Download-Source_Code_ZIP-181717?style=for-the-badge&logo=github"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/appoloncel283-debug/pulsenet/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/appoloncel283-debug/pulsenet/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <a href="LICENSE"><img alt="Source-available license" src="https://img.shields.io/badge/license-source--available%20%7C%20no%20modifications-orange.svg"></a>
   <img alt="Go 1.23+" src="https://img.shields.io/badge/Go-1.23%2B-00ADD8.svg">
 </p>
 
-## Download
+## Download and install
 
-### Windows application
+### Direct Windows application
 
 Click **Download for Windows** above to get `PulseNet.exe`. No Go installation is required. Open it to launch the interactive terminal interface, or run it from PowerShell:
 
@@ -28,11 +29,45 @@ Click **Download for Windows** above to get `PulseNet.exe`. No Go installation i
 .\PulseNet.exe diagnose example.com
 ```
 
+### PowerShell installer
+
+Download `Install-PulseNet.ps1`, inspect it, and run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\Install-PulseNet.ps1
+```
+
+The guided installer:
+
+- downloads the latest official `PulseNet.exe`;
+- verifies the release SHA-256 checksum before installation;
+- installs only for the current Windows user;
+- can add `pulsenet` to the user PATH;
+- can install optional short commands: `pn`, `pncheck`, `pnlogs`, `pndump`, and `pnwatch`;
+- can create a Start Menu shortcut;
+- registers a user-level uninstaller in Windows Settings.
+
+Silent installation with quick commands:
+
+```powershell
+.\Install-PulseNet.ps1 -Quiet -QuickCommands
+```
+
+Custom installation folder:
+
+```powershell
+.\Install-PulseNet.ps1 -InstallDirectory D:\Tools\PulseNet
+```
+
+Uninstall from **Windows Settings → Apps → Installed apps → PulseNet**, or run `Uninstall-PulseNet.ps1` from the installation folder.
+
 PulseNet is currently unsigned, so Windows SmartScreen may display an unknown-publisher warning. Verify the SHA-256 checksum attached to the release before running the file.
 
 ### Source code
 
-Click **Source Code ZIP** when you want to inspect, modify, or build PulseNet for your own tasks. Linux and macOS binaries are available on the [Releases](https://github.com/appoloncel283-debug/pulsenet/releases) page.
+Click **Source Code ZIP** to inspect the complete source or compile an unmodified copy for personal or internal use. Modification, derivative works, redistribution, and repackaging require prior written permission under the repository license.
+
+Linux and macOS binaries are available on the [Releases](https://github.com/appoloncel283-debug/pulsenet/releases) page.
 
 ## Why PulseNet
 
@@ -64,19 +99,29 @@ PulseNet does not collect telemetry and does not silently upload reports, dumps,
 - Route tracing through the operating system tool.
 - JSON and text diagnostic reports.
 - Interactive terminal interface.
+- Verified per-user PowerShell installer with optional PATH and quick-command setup.
 
 ## Quick start
 
 ### Windows
 
 ```powershell
-.\PulseNet.exe
-.\PulseNet.exe diagnose example.com
-.\PulseNet.exe dump https://example.com
-.\PulseNet.exe logs C:\nginx\logs\access.log --status 5xx --follow
+pulsenet
+pulsenet diagnose example.com
+pulsenet dump https://example.com
+pulsenet logs C:\nginx\logs\access.log --status 5xx --follow
 ```
 
-### Build from source
+With optional quick commands:
+
+```powershell
+pn
+pncheck example.com
+pndump https://example.com
+pnlogs C:\nginx\logs\access.log --status 5xx --follow
+```
+
+### Build an unmodified copy from source
 
 Go 1.23 or newer is required.
 
@@ -107,13 +152,8 @@ pulsenet support                           support address
 ### Site dump examples
 
 ```bash
-# Save page body, headers, metadata, redirects, and SHA-256
 pulsenet dump https://example.com
-
-# Select the output directory and maximum body size
 pulsenet dump https://example.com --output snapshots/example --max-mb 32
-
-# Machine-readable result
 pulsenet dump https://example.com --json
 ```
 
@@ -122,19 +162,10 @@ A dump stores one public response. It is deliberately not a crawler and does not
 ### Website log examples
 
 ```bash
-# Show the last 100 lines
 pulsenet logs /var/log/nginx/access.log
-
-# Show and follow 5xx requests
 pulsenet logs /var/log/nginx/access.log --status 5xx --follow
-
-# Filter errors containing a specific upstream name
 pulsenet logs /var/log/nginx/error.log --level error --contains upstream
-
-# Filter a Windows Nginx log
 pulsenet logs C:\nginx\logs\access.log --method POST --request-path /api --lines 250
-
-# Structured output for scripts
 pulsenet logs /var/log/nginx/access.log --status 400-599 --json
 ```
 
@@ -168,10 +199,10 @@ TGVDhCbDKEnWV5BVrUtMicjhwMiJVUYSSh
 
 Always verify that the selected transfer network is **TRC20** before sending.
 
-## Contributing
+## Feedback and contributions
 
-Bug reports and focused pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
+Bug reports are welcome. Code contributions and modified versions require prior written permission from the copyright holder. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-PulseNet is released under the [MIT License](LICENSE).
+PulseNet is source-available under the [PulseNet Source-Available License 1.0](LICENSE). The license permits use of official unmodified releases and source inspection, but does not permit modification or derivative works without prior written permission.
