@@ -3,6 +3,7 @@ param(
     [string]$InstallDirectory = (Join-Path $env:LOCALAPPDATA 'Programs\PulseNet'),
     [string]$ReleaseTag,
     [switch]$QuickCommands,
+    [switch]$NoQuickCommands,
     [switch]$NoPath,
     [switch]$NoShortcut,
     [switch]$Quiet,
@@ -17,18 +18,19 @@ try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 }
 catch {
-    # PowerShell 7 handles TLS negotiation without this compatibility setting.
+    # PowerShell 7 negotiates TLS without this compatibility setting.
 }
 
 $Repository = 'appoloncel283-debug/pulsenet'
-$ProductVersion = '2.4.0'
+$MinimumVersion = [version]'2.4.0'
 $ApiHeaders = @{
     Accept = 'application/vnd.github+json'
-    'User-Agent' = "PulseNet-Installer/$ProductVersion"
+    'User-Agent' = 'PulseNet-Installer/2.4.0'
 }
 $ExecutablePath = Join-Path $InstallDirectory 'PulseNet.exe'
 $UninstallerPath = Join-Path $InstallDirectory 'Uninstall-PulseNet.ps1'
 $IntegrityPath = Join-Path $InstallDirectory 'integrity.json'
+$InstallationPath = Join-Path $InstallDirectory 'installation.json'
 $ShortcutPath = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\PulseNet.lnk'
 $UninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\PulseNet'
 
@@ -53,31 +55,51 @@ function Ask-YesNo {
     }
 }
 
-function Resolve-ReleaseTag {
+function Get-ReleaseVersion {
+    param([string]$Tag)
+
+    $match = [regex]::Match($Tag, '^v?(?<version>\d+\.\d+\.\d+)')
+    if (-not $match.Success) {
+        throw "Release tag '$Tag' does not contain a semantic version."
+    }
+    return [version]$match.Groups['version'].Value
+}
+
+function Resolve-Release {
     param([string]$RequestedTag)
 
-    if (-not [string]::IsNullOrWhiteSpace($RequestedTag)) {
-        return $RequestedTag.Trim()
+    if ([string]::IsNullOrWhiteSpace($RequestedTag)) {
+        $uri = "https://api.github.com/repos/$Repository/releases/latest"
+        Write-Step 'Resolving the latest stable release...'
+    }
+    else {
+        $encodedTag = [uri]::EscapeDataString($RequestedTag.Trim())
+        $uri = "https://api.github.com/repos/$Repository/releases/tags/$encodedTag"
+        Write-Step "Resolving release $($RequestedTag.Trim())..."
     }
 
-    Write-Step 'Resolving the latest stable release...'
     try {
-        $request = @{
-            Uri = "https://api.github.com/repos/$Repository/releases/latest"
-            Headers = $ApiHeaders
-            UseBasicParsing = $true
-        }
-        $release = Invoke-RestMethod @request
+        return Invoke-RestMethod -Uri $uri -Headers $ApiHeaders
     }
     catch {
-        throw "Could not resolve the latest PulseNet release: $($_.Exception.Message)"
+        throw "Could not resolve a PulseNet release: $($_.Exception.Message)"
     }
+}
 
-    $tag = [string]$release.tag_name
-    if ([string]::IsNullOrWhiteSpace($tag)) {
-        throw 'GitHub returned a release without a tag name.'
+function Get-AssetUrl {
+    param(
+        [object]$Release,
+        [string]$Name
+    )
+
+    $asset = @($Release.assets) | Where-Object {
+        [string]::Equals([string]$_.name, $Name, [System.StringComparison]::OrdinalIgnoreCase)
+    } | Select-Object -First 1
+
+    if ($null -eq $asset -or [string]::IsNullOrWhiteSpace([string]$asset.browser_download_url)) {
+        throw "Release $($Release.tag_name) does not contain required asset $Name."
     }
-    return $tag.Trim()
+    return [string]$asset.browser_download_url
 }
 
 function Download-File {
@@ -111,10 +133,7 @@ function Get-ExpectedHash {
         $trimmed = $line.Trim()
         if ($trimmed -eq '') { continue }
 
-        $match = [regex]::Match(
-            $trimmed,
-            '^(?<hash>[A-Fa-f0-9]{64})\s+\*?(?<name>.+?)\s*$'
-        )
+        $match = [regex]::Match($trimmed, '^(?<hash>[A-Fa-f0-9]{64})\s+\*?(?<name>.+?)\s*$')
         if (-not $match.Success) { continue }
 
         $listedName = $match.Groups['name'].Value.Replace('\', '/')
@@ -137,6 +156,16 @@ function Assert-Hash {
     if ($actualHash -ne $ExpectedHash) {
         throw "Checksum verification failed for $(Split-Path $Path -Leaf). Expected $ExpectedHash, received $actualHash."
     }
+}
+
+function Write-Utf8NoBom {
+    param(
+        [string]$Path,
+        [string]$Content
+    )
+
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $encoding)
 }
 
 function Add-DirectoryToUserPath {
@@ -204,30 +233,41 @@ function Install-StartMenuShortcut {
     $shortcut.Save()
 }
 
+if ($QuickCommands -and $NoQuickCommands) {
+    throw 'Use either -QuickCommands or -NoQuickCommands, not both.'
+}
+
 $addToPath = -not $NoPath
-$installQuickCommands = $QuickCommands.IsPresent
+$installQuickCommands = -not $NoQuickCommands
 $createShortcut = -not $NoShortcut
 
 if (-not $Quiet) {
     Write-Host ''
     Write-Host 'PulseNet installer' -ForegroundColor Cyan
-    Write-Host 'The installer pins one official release and verifies every downloaded file with SHA-256.'
+    Write-Host 'The installer refuses stale releases and verifies the installed executable before reporting success.'
     Write-Host ''
     $addToPath = Ask-YesNo 'Add PulseNet to your user PATH so the pulsenet command works everywhere?' $true
-    $installQuickCommands = Ask-YesNo 'Install short commands (pn, pncheck, pnlogs, pndump, pnwatch, pnrouter, pnsha)?' $false
+    $installQuickCommands = Ask-YesNo 'Install short commands (pn, pncheck, pnlogs, pndump, pnwatch, pnrouter, pnsha)?' $true
     $createShortcut = Ask-YesNo 'Create a Start Menu shortcut?' $true
 }
 
+if ($QuickCommands) {
+    $installQuickCommands = $true
+}
 if ($installQuickCommands) {
     $addToPath = $true
 }
 
-$resolvedTag = Resolve-ReleaseTag -RequestedTag $ReleaseTag
-$encodedTag = [uri]::EscapeDataString($resolvedTag)
-$releaseBase = "https://github.com/$Repository/releases/download/$encodedTag"
-$executableUrl = "$releaseBase/PulseNet.exe"
-$uninstallerUrl = "$releaseBase/Uninstall-PulseNet.ps1"
-$checksumsUrl = "$releaseBase/SHA256SUMS.txt"
+$release = Resolve-Release -RequestedTag $ReleaseTag
+$resolvedTag = [string]$release.tag_name
+$releaseVersion = Get-ReleaseVersion -Tag $resolvedTag
+if ($releaseVersion -lt $MinimumVersion) {
+    throw "GitHub's latest published PulseNet release is $releaseVersion, but this installer requires $MinimumVersion or newer. The new release is not ready yet; no old binary was installed."
+}
+
+$executableUrl = Get-AssetUrl -Release $release -Name 'PulseNet.exe'
+$uninstallerUrl = Get-AssetUrl -Release $release -Name 'Uninstall-PulseNet.ps1'
+$checksumsUrl = Get-AssetUrl -Release $release -Name 'SHA256SUMS.txt'
 
 $tempDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ("PulseNet-Install-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tempDirectory -Force | Out-Null
@@ -236,8 +276,8 @@ $tempUninstaller = Join-Path $tempDirectory 'Uninstall-PulseNet.ps1'
 $tempChecksums = Join-Path $tempDirectory 'SHA256SUMS.txt'
 
 try {
-    Write-Step "Using release $resolvedTag."
-    Write-Step 'Downloading release checksums...'
+    Write-Step "Using immutable release $resolvedTag."
+    Write-Step 'Downloading checksums...'
     Download-File -Uri $checksumsUrl -Destination $tempChecksums
 
     Write-Step 'Downloading PulseNet.exe...'
@@ -250,7 +290,7 @@ try {
     $expectedExecutableHash = Get-ExpectedHash -ChecksumText $checksumText -FileName 'PulseNet.exe'
     $expectedUninstallerHash = Get-ExpectedHash -ChecksumText $checksumText -FileName 'Uninstall-PulseNet.ps1'
 
-    Write-Step 'Verifying SHA-256 checksums...'
+    Write-Step 'Verifying downloaded SHA-256 checksums...'
     Assert-Hash -Path $tempExecutable -ExpectedHash $expectedExecutableHash
     Assert-Hash -Path $tempUninstaller -ExpectedHash $expectedUninstallerHash
 
@@ -271,21 +311,20 @@ try {
         }
     }
 
-    Write-Step "Installing to $InstallDirectory..."
+    Write-Step "Installing PulseNet $releaseVersion to $InstallDirectory..."
     New-Item -ItemType Directory -Path $InstallDirectory -Force | Out-Null
     Copy-Item -LiteralPath $tempExecutable -Destination $ExecutablePath -Force
     Copy-Item -LiteralPath $tempUninstaller -Destination $UninstallerPath -Force
 
-    Write-Step 'Writing the startup integrity manifest...'
     $integrityManifest = [ordered]@{
         product = 'PulseNet'
-        version = $ProductVersion
+        version = $releaseVersion.ToString()
         release_tag = $resolvedTag
         executable = 'PulseNet.exe'
         sha256 = $expectedExecutableHash
         generated_at = (Get-Date).ToUniversalTime().ToString('o')
     }
-    $integrityManifest | ConvertTo-Json | Set-Content -LiteralPath $IntegrityPath -Encoding ASCII
+    Write-Utf8NoBom -Path $IntegrityPath -Content ($integrityManifest | ConvertTo-Json)
 
     if ($installQuickCommands) {
         Write-Step 'Installing quick commands...'
@@ -308,10 +347,30 @@ try {
         Remove-Item -LiteralPath $ShortcutPath -Force -ErrorAction SilentlyContinue
     }
 
+    Write-Step 'Running installed-command smoke tests...'
+    $versionOutput = (& $ExecutablePath version 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $versionOutput -notmatch [regex]::Escape($releaseVersion.ToString())) {
+        throw "Installed executable returned an unexpected version: '$versionOutput'."
+    }
+
+    $integrityOutput = (& $ExecutablePath integrity --json 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($integrityOutput)) {
+        throw 'Installed executable does not support the integrity command.'
+    }
+    try {
+        $integrityResult = $integrityOutput | ConvertFrom-Json
+    }
+    catch {
+        throw "Installed integrity command returned invalid JSON: $integrityOutput"
+    }
+    if ([string]$integrityResult.state -ne 'verified') {
+        throw "Installed executable failed its integrity check: $($integrityResult.state)."
+    }
+
     Write-Step 'Registering the uninstaller for the current user...'
     New-Item -Path $UninstallKey -Force | Out-Null
     New-ItemProperty -Path $UninstallKey -Name DisplayName -Value 'PulseNet' -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $UninstallKey -Name DisplayVersion -Value $ProductVersion -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $UninstallKey -Name DisplayVersion -Value $releaseVersion.ToString() -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $UninstallKey -Name Publisher -Value 'PulseNet' -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $UninstallKey -Name InstallLocation -Value $InstallDirectory -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $UninstallKey -Name DisplayIcon -Value $ExecutablePath -PropertyType String -Force | Out-Null
@@ -319,24 +378,22 @@ try {
     New-ItemProperty -Path $UninstallKey -Name NoModify -Value 1 -PropertyType DWord -Force | Out-Null
     New-ItemProperty -Path $UninstallKey -Name NoRepair -Value 1 -PropertyType DWord -Force | Out-Null
 
-    $manifest = [ordered]@{
-        installed_at = (Get-Date).ToString('o')
+    $installationManifest = [ordered]@{
+        installed_at = (Get-Date).ToUniversalTime().ToString('o')
+        version = $releaseVersion.ToString()
         release_tag = $resolvedTag
-        version = $ProductVersion
         install_directory = $InstallDirectory
         added_to_path = $addToPath
         quick_commands = $installQuickCommands
         start_menu_shortcut = $createShortcut
     }
-    $manifest | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $InstallDirectory 'installation.json') -Encoding ASCII
+    Write-Utf8NoBom -Path $InstallationPath -Content ($installationManifest | ConvertTo-Json)
 
     Write-Host ''
-    Write-Host 'PulseNet was installed successfully.' -ForegroundColor Green
-    Write-Host "Release: $resolvedTag"
+    Write-Host "PulseNet $releaseVersion was installed and verified successfully." -ForegroundColor Green
     Write-Host "Executable: $ExecutablePath"
-    Write-Host "Verified SHA-256: $expectedExecutableHash"
     if ($addToPath) {
-        Write-Host 'Open a new terminal and run: pulsenet'
+        Write-Host 'Open a new terminal and run: pulsenet version'
     }
     if ($installQuickCommands) {
         Write-Host 'Quick commands: pn, pncheck, pnlogs, pndump, pnwatch, pnrouter, pnsha'
