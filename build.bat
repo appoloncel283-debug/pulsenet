@@ -1,6 +1,6 @@
 @echo off
 setlocal
-if "%VERSION%"=="" set VERSION=2.2.0
+if "%VERSION%"=="" set VERSION=2.2.1
 if not exist bin mkdir bin
 go test ./... || exit /b 1
 go vet ./... || exit /b 1
