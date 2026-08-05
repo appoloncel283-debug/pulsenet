@@ -12,7 +12,7 @@ import (
 	"github.com/appoloncel283-debug/pulsenet/internal/ui"
 )
 
-var version = "2.0.0"
+var version = "2.1.0"
 
 func main() {
 	if len(os.Args) == 1 {
@@ -36,6 +36,10 @@ func main() {
 		err = benchmarkCommand(os.Args[2:])
 	case "watch", "monitor":
 		err = watchCommand(os.Args[2:])
+	case "dump", "site-dump":
+		err = dumpCommand(os.Args[2:])
+	case "logs", "log-viewer":
+		err = logsCommand(os.Args[2:])
 	case "trace":
 		err = traceCommand(os.Args[2:])
 	case "support", "donate":
@@ -214,6 +218,61 @@ func watchCommand(args []string) error {
 	return nil
 }
 
+func dumpCommand(args []string) error {
+	targetArg, flagArgs := splitLeadingTarget(args)
+	fs := flag.NewFlagSet("dump", flag.ContinueOnError)
+	output := fs.String("output", "", "output directory; default is generated from host and time")
+	maxMB := fs.Int64("max-mb", 16, "maximum response body size in MiB (max 128)")
+	timeout := fs.Duration("timeout", 15*time.Second, "request timeout")
+	insecure := fs.Bool("insecure", false, "skip TLS certificate verification")
+	jsonOutput := fs.Bool("json", false, "print JSON result")
+	if err := fs.Parse(flagArgs); err != nil {
+		return err
+	}
+	if targetArg == "" && fs.NArg() > 0 {
+		targetArg = fs.Arg(0)
+	}
+	if targetArg == "" {
+		return fmt.Errorf("usage: pulsenet dump <url> [options]")
+	}
+	if *maxMB < 1 || *maxMB > 128 {
+		return fmt.Errorf("max-mb must be between 1 and 128")
+	}
+	return ui.RunSiteDump(targetArg, *output, *maxMB*1024*1024, *timeout, *insecure, *jsonOutput)
+}
+
+func logsCommand(args []string) error {
+	fileArg, flagArgs := splitLeadingTarget(args)
+	fs := flag.NewFlagSet("logs", flag.ContinueOnError)
+	lines := fs.Int("lines", 100, "number of recent matching lines to show")
+	follow := fs.Bool("follow", false, "continue showing appended log lines")
+	interval := fs.Duration("interval", 500*time.Millisecond, "poll interval in follow mode")
+	contains := fs.String("contains", "", "case-insensitive text filter")
+	level := fs.String("level", "", "log level filter, for example error or warn")
+	status := fs.String("status", "", "HTTP status filter: 500, 500-599, or 5xx")
+	ip := fs.String("ip", "", "client IP filter")
+	method := fs.String("method", "", "HTTP method filter")
+	requestPath := fs.String("request-path", "", "request path substring filter")
+	jsonOutput := fs.Bool("json", false, "print JSON; unavailable with --follow")
+	if err := fs.Parse(flagArgs); err != nil {
+		return err
+	}
+	if fileArg == "" && fs.NArg() > 0 {
+		fileArg = fs.Arg(0)
+	}
+	if fileArg == "" {
+		return fmt.Errorf("usage: pulsenet logs <log-file> [options]")
+	}
+	if *lines < 1 || *lines > 100000 {
+		return fmt.Errorf("lines must be between 1 and 100000")
+	}
+	if *jsonOutput && *follow {
+		return fmt.Errorf("--json cannot be combined with --follow")
+	}
+	filter := core.LogFilter{Contains: *contains, Level: *level, Status: *status, IP: *ip, Method: *method, RequestPath: *requestPath}
+	return ui.RunLogs(fileArg, *lines, *follow, *interval, filter, *jsonOutput)
+}
+
 func traceCommand(args []string) error {
 	targetArg, flagArgs := splitLeadingTarget(args)
 	fs := flag.NewFlagSet("trace", flag.ContinueOnError)
@@ -261,12 +320,16 @@ Usage:
   pulsenet ports <host> --ports <list>       explicit TCP port check
   pulsenet benchmark <url>                   HTTP latency and throughput benchmark
   pulsenet watch <url>                       availability monitor with optional CSV
+  pulsenet dump <url>                        save a public page snapshot to disk
+  pulsenet logs <log-file>                   view, filter, and follow local website logs
   pulsenet trace <host>                      route trace using the platform tool
   pulsenet support                           project support address
 
 Examples:
   pulsenet diagnose example.com --report report.txt --json report.json
-  pulsenet diagnose example.com --ports 80,443,8443 --attempts 5
+  pulsenet dump https://example.com --output snapshots/example
+  pulsenet logs /var/log/nginx/access.log --status 5xx --follow
+  pulsenet logs C:\\nginx\\logs\\error.log --level error --lines 200
   pulsenet dns example.com --json
   pulsenet headers https://example.com
   pulsenet ports 192.168.1.10 --ports 22,80,443,8000-8010
