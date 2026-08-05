@@ -32,17 +32,18 @@ jobs:
           go test ./...
           go vet ./...
 
-      - name: Validate installer scripts
+      - name: Validate PowerShell scripts
         shell: pwsh
         run: |
           $failed = $false
-          foreach ($path in @('Install-PulseNet.ps1', 'Uninstall-PulseNet.ps1')) {
+          foreach ($path in @('Install-PulseNet.ps1', 'Uninstall-PulseNet.ps1', 'PulseNet-Security.ps1')) {
             $tokens = $null
             $errors = $null
             $resolvedPath = (Resolve-Path $path).Path
             [void][System.Management.Automation.Language.Parser]::ParseFile($resolvedPath, [ref]$tokens, [ref]$errors)
             if ($errors.Count -gt 0) {
               $failed = $true
+              Write-Host "PowerShell parser errors in $path" -ForegroundColor Red
               $errors | ForEach-Object { Write-Host $_.Message }
             }
           }
@@ -51,7 +52,7 @@ jobs:
       - name: Build and package
         shell: bash
         env:
-          VERSION: 2.4.0
+          VERSION: 2.5.0
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -63,7 +64,7 @@ jobs:
             output="pulsenet-${os}-${arch}${extension}"
             CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o "dist/${output}" ./cmd/pulsenet
             if [ "$os" = "windows" ]; then
-              zip -j "dist/pulsenet-${os}-${arch}.zip" "dist/${output}" README.md LICENSE
+              zip -j "dist/pulsenet-${os}-${arch}.zip" "dist/${output}" README.md LICENSE SECURITY_TOOLKIT.md
             else
               tar -czf "dist/pulsenet-${os}-${arch}.tar.gz" -C dist "${output}"
             fi
@@ -75,6 +76,8 @@ jobs:
           cp dist/pulsenet-windows-amd64.exe dist/PulseNet.exe
           cp Install-PulseNet.ps1 dist/Install-PulseNet.ps1
           cp Uninstall-PulseNet.ps1 dist/Uninstall-PulseNet.ps1
+          cp PulseNet-Security.ps1 dist/PulseNet-Security.ps1
+          cp pnsec.cmd dist/pnsec.cmd
 
           executable_hash="$(sha256sum dist/PulseNet.exe | awk '{print toupper($1)}')"
           generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -89,7 +92,24 @@ jobs:
           }
           EOF
 
-          zip -j dist/PulseNet-Windows.zip dist/PulseNet.exe dist/integrity.json Install-PulseNet.ps1 Uninstall-PulseNet.ps1 README.md LICENSE
+          zip -j dist/PulseNet-Windows.zip \
+            dist/PulseNet.exe \
+            dist/integrity.json \
+            Install-PulseNet.ps1 \
+            Uninstall-PulseNet.ps1 \
+            PulseNet-Security.ps1 \
+            pnsec.cmd \
+            README.md \
+            SECURITY_TOOLKIT.md \
+            LICENSE
+
+          zip -j dist/PulseNet-Security-Toolkit.zip \
+            dist/PulseNet.exe \
+            dist/integrity.json \
+            PulseNet-Security.ps1 \
+            pnsec.cmd \
+            SECURITY_TOOLKIT.md \
+            LICENSE
 
       - name: Create and verify checksums
         shell: bash
@@ -109,7 +129,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: 2.4.0
+          VERSION: 2.5.0
         run: |
           set -euo pipefail
           tag="v${VERSION}-build.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
@@ -127,4 +147,4 @@ jobs:
         run: |
           gh issue create --repo "$GITHUB_REPOSITORY" \
             --title "Release published ${RELEASE_TAG}" \
-            --body "PulseNet 2.4.0 was built, checksum-verified, and published successfully.\n\n${RELEASE_URL}"
+            --body "PulseNet 2.5.0 and the authorized Security Toolkit were built, checksum-verified, and published successfully.\n\n${RELEASE_URL}"
