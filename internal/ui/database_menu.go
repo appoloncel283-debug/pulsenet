@@ -20,15 +20,17 @@ func RunDatabaseMenu(reader *bufio.Reader) {
 		fmt.Println(Color(bold, "  0") + "  Back")
 		fmt.Print("\nSelect an action: ")
 
-		switch readLine(reader) {
+		selection := readLine(reader)
+		switch selection {
 		case "1":
 			RunDBTools(false)
 			pause(reader)
-		case "2", "3":
-			operation := "schema"
-			if readLastSelection(reader) == "3" {
-				operation = "backup"
-			}
+		case "2":
+			runDatabaseExportPrompt(reader, "schema")
+			pause(reader)
+		case "3":
+			runDatabaseExportPrompt(reader, "backup")
+			pause(reader)
 		case "4":
 			engine := askDefault(reader, "Engine (postgres, mysql, sqlite)", "sqlite")
 			path := ask(reader, "Backup or dump file: ")
@@ -46,11 +48,6 @@ func RunDatabaseMenu(reader *bufio.Reader) {
 		}
 	}
 }
-
-// readLastSelection is intentionally unused outside this file; the export path
-// is handled by runDatabaseExportPrompt below. It exists only to keep the menu
-// switch easy to read.
-func readLastSelection(_ *bufio.Reader) string { return "" }
 
 func runDatabaseExportPrompt(reader *bufio.Reader, operation string) {
 	engine := askDefault(reader, "Engine (postgres, mysql, sqlite)", "sqlite")
