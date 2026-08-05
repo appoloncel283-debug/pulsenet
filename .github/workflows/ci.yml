@@ -9,19 +9,89 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: "1.23.x"
           cache: true
-      - name: Format check
-        run: test -z "$(gofmt -l ./cmd ./internal)"
-      - name: Test
-        run: go test -race ./...
-      - name: Vet
+
+      - name: Check Go formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l ./cmd ./internal)"
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Run vet
         run: go vet ./...
-      - name: Build
-        run: go build -trimpath ./cmd/pulsenet
+
+      - name: Cross-build supported platforms
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pulsenet-builds
+          for target in \
+            windows/amd64 \
+            windows/arm64 \
+            linux/amd64 \
+            linux/arm64 \
+            darwin/amd64 \
+            darwin/arm64
+          do
+            os="${target%/*}"
+            arch="${target#*/}"
+            extension=""
+            if [ "$os" = "windows" ]; then extension=".exe"; fi
+            echo "Building $os/$arch"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
+              go build -trimpath \
+              -o "/tmp/pulsenet-builds/pulsenet-${os}-${arch}${extension}" \
+              ./cmd/pulsenet
+          done
+
+      - name: Validate PowerShell scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($path in @('Install-PulseNet.ps1', 'Uninstall-PulseNet.ps1')) {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $path),
+              [ref]$tokens,
+              [ref]$errors
+            )
+            if ($errors.Count -gt 0) {
+              $failed = $true
+              Write-Host "PowerShell parser errors in $path" -ForegroundColor Red
+              $errors | ForEach-Object { Write-Host $_.Message }
+            }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Validate checksum manifest parser format
+        shell: pwsh
+        run: |
+          $file = Join-Path $env:RUNNER_TEMP 'PulseNet.exe'
+          [IO.File]::WriteAllBytes($file, [byte[]](1,2,3,4,5))
+          $expected = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash
+          $manifest = "$($expected.ToLowerInvariant())  PulseNet.exe`r`n"
+          $match = [regex]::Match(
+            $manifest.Trim(),
+            '^(?<hash>[A-Fa-f0-9]{64})\s+\*?(?<name>.+?)\s*$'
+          )
+          if (-not $match.Success) { throw 'Checksum manifest line was not parsed.' }
+          if ($match.Groups['name'].Value -ne 'PulseNet.exe') { throw 'Checksum filename was parsed incorrectly.' }
+          if ($match.Groups['hash'].Value.ToUpperInvariant() -ne $expected) { throw 'Checksum hash was parsed incorrectly.' }
