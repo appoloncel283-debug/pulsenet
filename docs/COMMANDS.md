@@ -44,6 +44,8 @@ Scans local dump files for obvious private-key, cloud-key, GitHub-token, and gen
 
 ## Database commands
 
+The interactive interface contains one Database Toolkit tab for all database actions.
+
 All database commands wrap installed official client tools. They require authorization and do not discover or bypass credentials.
 
 ### `db tools`
@@ -80,15 +82,47 @@ Every successful export also writes `<output>.manifest.json` with size, SHA-256,
 pulsenet db verify --engine <postgres|mysql|sqlite> --file <backup> [--timeout 2m] [--json]
 ```
 
-- PostgreSQL: validates the custom archive catalog with `pg_restore --list`.
-- SQLite: runs `PRAGMA quick_check`.
-- MySQL/MariaDB: checks for recognizable dump statements.
-- All engines: calculate SHA-256 and report file size.
+- PostgreSQL validates the custom archive catalog with `pg_restore --list`.
+- SQLite runs `PRAGMA quick_check`.
+- MySQL/MariaDB checks for recognizable dump statements.
+- All engines calculate SHA-256 and report file size.
+
+## Router assistant
+
+### `router info`
+
+```text
+pulsenet router info [--json]
+```
+
+Detects the local IPv4 default gateway, current Wi-Fi SSID when available, gateway MAC address, reachable HTTP/HTTPS admin page, page title, and server header.
+
+### `router open`
+
+```text
+pulsenet router open
+```
+
+Opens the detected local router admin page in the default browser.
+
+PulseNet does not read, guess, extract, or submit router usernames or passwords. Browser autofill remains controlled by the browser and only uses credentials the user previously saved there.
+
+## Executable integrity
+
+### `integrity`
+
+```text
+pulsenet integrity [--json]
+```
+
+Calculates the running executable's SHA-256. Installed builds compare the value with `integrity.json` on every startup. Portable or development builds report their current hash and an unmanaged state when no manifest exists.
 
 ## Credential handling
 
-Use the official client configuration, operating-system secret storage, or environment variables. Avoid passwords in command-line arguments because command history and process listings may expose them.
+Use official database client configuration, operating-system secret storage, or environment variables. Avoid passwords in command-line arguments because command history and process listings may expose them.
+
+For router access, use credentials printed on the device, provided by the ISP, or stored in the user's own browser password manager. PulseNet does not recover or guess them.
 
 ## Authorization
 
-Run database, benchmark, port, and site-maintenance commands only on systems you own or are explicitly authorized to maintain.
+Run database, benchmark, port, router, and site-maintenance commands only on systems you own or are explicitly authorized to maintain.
