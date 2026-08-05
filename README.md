@@ -7,8 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/appoloncel283-debug/pulsenet/releases/download/latest/PulseNet.exe"><img alt="Download PulseNet for Windows" src="https://img.shields.io/badge/Download_for_Windows-PulseNet.exe-0078D4?style=for-the-badge&logo=windows"></a>
-  <a href="https://github.com/appoloncel283-debug/pulsenet/releases/download/latest/Install-PulseNet.ps1"><img alt="PowerShell installer" src="https://img.shields.io/badge/PowerShell-Installer-5391FE?style=for-the-badge&logo=powershell"></a>
+  <a href="https://github.com/appoloncel283-debug/pulsenet/releases/download/latest/Install-PulseNet.ps1"><img alt="Download PulseNet for Windows" src="https://img.shields.io/badge/Download_for_Windows-Installer-0078D4?style=for-the-badge&logo=windows"></a>
   <a href="https://github.com/appoloncel283-debug/pulsenet/archive/refs/heads/main.zip"><img alt="Download source code" src="https://img.shields.io/badge/Download-Source_Code_ZIP-181717?style=for-the-badge&logo=github"></a>
 </p>
 
@@ -20,28 +19,19 @@
 
 ## Download and install
 
-### Direct Windows application
+Click **Download for Windows** above. The button downloads the official guided Windows installer.
 
-Click **Download for Windows** above to get `PulseNet.exe`. No Go installation is required. Open it to launch the interactive terminal interface, or run it from PowerShell:
-
-```powershell
-.\PulseNet.exe
-.\PulseNet.exe diagnose example.com
-```
-
-### PowerShell installer
-
-Download `Install-PulseNet.ps1`, inspect it, remove the browser download block, and run it:
+After downloading, inspect the file and run:
 
 ```powershell
 Unblock-File -LiteralPath .\Install-PulseNet.ps1
 .\Install-PulseNet.ps1
 ```
 
-The guided installer:
+The installer:
 
 - downloads the latest official `PulseNet.exe`;
-- verifies the release SHA-256 checksum before installation;
+- verifies its SHA-256 checksum before installation;
 - installs only for the current Windows user;
 - can add `pulsenet` to the user PATH;
 - can install optional short commands: `pn`, `pncheck`, `pnlogs`, `pndump`, and `pnwatch`;
@@ -62,13 +52,13 @@ Custom installation folder:
 
 Uninstall from **Windows Settings → Apps → Installed apps → PulseNet**, or run `Uninstall-PulseNet.ps1` from the installation folder.
 
-PulseNet is currently unsigned, so Windows SmartScreen may display an unknown-publisher warning. Verify the SHA-256 checksum attached to the release before running the file.
+A portable `PulseNet.exe` and Linux/macOS builds remain available on the [Releases](https://github.com/appoloncel283-debug/pulsenet/releases) page.
+
+PulseNet is currently unsigned, so Windows SmartScreen may display an unknown-publisher warning. Verify the SHA-256 checksum attached to the release before running downloaded files.
 
 ### Source code
 
 Click **Source Code ZIP** to inspect the complete source or compile an unmodified copy for personal or internal use. Modification, derivative works, redistribution, and repackaging require prior written permission under the repository license.
-
-Linux and macOS binaries are available on the [Releases](https://github.com/appoloncel283-debug/pulsenet/releases) page.
 
 ## Why PulseNet
 
@@ -76,7 +66,7 @@ PulseNet follows the same path a real request takes and reports where it breaks:
 
 **DNS → TCP → TLS → HTTP → browser security headers → recommendations**
 
-It also includes two practical website-maintenance tools:
+It also includes practical website-maintenance tools:
 
 - **Site dump** saves one public HTTP response to a local folder with the body, redacted headers, metadata, redirects, and SHA-256 hash.
 - **Log viewer** reads local Nginx, Apache, JSONL, and plain-text logs with filters and live follow mode.
@@ -97,14 +87,12 @@ PulseNet does not collect telemetry and does not silently upload reports, dumps,
 - Availability monitoring with optional CSV logging.
 - Public page snapshots with size limits and sensitive-header redaction.
 - Local website-log viewer with filters, JSON output, and follow mode.
-- Route tracing through the operating system tool.
+- Route tracing through the operating-system tool.
 - JSON and text diagnostic reports.
 - Interactive terminal interface.
-- Verified per-user PowerShell installer with optional PATH and quick-command setup.
+- Verified per-user Windows installer with optional PATH and quick-command setup.
 
 ## Quick start
-
-### Windows
 
 ```powershell
 pulsenet
@@ -120,17 +108,6 @@ pn
 pncheck example.com
 pndump https://example.com
 pnlogs C:\nginx\logs\access.log --status 5xx --follow
-```
-
-### Build an unmodified copy from source
-
-Go 1.23 or newer is required.
-
-```bash
-git clone https://github.com/appoloncel283-debug/pulsenet.git
-cd pulsenet
-go test ./...
-go build -o pulsenet ./cmd/pulsenet
 ```
 
 ## Commands
@@ -174,6 +151,17 @@ The log viewer reads files available on the current computer. To inspect product
 
 Detailed options are documented in [docs/COMMANDS.md](docs/COMMANDS.md).
 
+## Build an unmodified copy
+
+Go 1.23 or newer is required.
+
+```bash
+git clone https://github.com/appoloncel283-debug/pulsenet.git
+cd pulsenet
+go test ./...
+go build -o pulsenet ./cmd/pulsenet
+```
+
 ## Safety and scope
 
 The `ports` command checks one host and requires an explicit port list. It accepts at most 128 unique ports per run and limits concurrency. Use it only on systems you own or are authorized to test.
@@ -200,7 +188,7 @@ TGVDhCbDKEnWV5BVrUtMicjhwMiJVUYSSh
 
 Always verify that the selected transfer network is **TRC20** before sending.
 
-## Feedback and contributions
+## Feedback
 
 Bug reports are welcome. Code contributions and modified versions require prior written permission from the copyright holder. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
