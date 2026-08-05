@@ -49,12 +49,15 @@ Remove-Item -LiteralPath $UninstallKey -Recurse -Force -ErrorAction SilentlyCont
 Write-Host '[PulseNet] Removing installed files...' -ForegroundColor Cyan
 $knownFiles = @(
     'PulseNet.exe',
+    'integrity.json',
     'installation.json',
     'pn.cmd',
     'pncheck.cmd',
     'pnlogs.cmd',
     'pndump.cmd',
-    'pnwatch.cmd'
+    'pnwatch.cmd',
+    'pnrouter.cmd',
+    'pnsha.cmd'
 )
 
 foreach ($name in $knownFiles) {
