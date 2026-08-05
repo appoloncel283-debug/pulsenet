@@ -1,0 +1,89 @@
+name: Temporary build diagnostics
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.x"
+          cache: true
+
+      - name: Run diagnostic build
+        id: diagnostic
+        shell: bash
+        run: |
+          set +e
+          {
+            echo "Commit: $GITHUB_SHA"
+            echo
+            echo "== gofmt =="
+            gofmt -w ./cmd ./internal
+            echo "gofmt exit: $?"
+            echo
+            echo "== go test =="
+            go test ./...
+            test_exit=$?
+            echo "go test exit: $test_exit"
+            echo
+            echo "== go vet =="
+            go vet ./...
+            vet_exit=$?
+            echo "go vet exit: $vet_exit"
+            echo
+            echo "== windows build =="
+            CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.version=2.4.0" -o /tmp/PulseNet.exe ./cmd/pulsenet
+            build_exit=$?
+            echo "windows build exit: $build_exit"
+            echo
+            echo "== Linux smoke test =="
+            CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.version=2.4.0" -o /tmp/pulsenet ./cmd/pulsenet
+            linux_build_exit=$?
+            if [ "$linux_build_exit" -eq 0 ]; then
+              /tmp/pulsenet version
+              /tmp/pulsenet integrity --json
+              smoke_exit=$?
+            else
+              smoke_exit=$linux_build_exit
+            fi
+            echo "smoke exit: $smoke_exit"
+            echo
+            if [ "$test_exit" -eq 0 ] && [ "$vet_exit" -eq 0 ] && [ "$build_exit" -eq 0 ] && [ "$smoke_exit" -eq 0 ]; then
+              echo "RESULT=SUCCESS"
+              final_exit=0
+            else
+              echo "RESULT=FAILURE"
+              final_exit=1
+            fi
+          } > diagnostic.txt 2>&1
+          cat diagnostic.txt
+          echo "exit_code=$final_exit" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Publish diagnostic issue
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Build diagnostic ${GITHUB_SHA::12}"
+          {
+            echo '```text'
+            sed -n '1,500p' diagnostic.txt
+            echo '```'
+          } > issue-body.md
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file issue-body.md
+
+      - name: Fail when verification failed
+        if: steps.diagnostic.outputs.exit_code != '0'
+        run: exit 1
