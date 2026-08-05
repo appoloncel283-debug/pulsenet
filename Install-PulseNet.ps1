@@ -60,10 +60,12 @@ function Resolve-ReleaseTag {
 
     Write-Step 'Resolving the latest stable release...'
     try {
-        $release = Invoke-RestMethod \
-            -Uri "https://api.github.com/repos/$Repository/releases/latest" \
-            -Headers $ApiHeaders \
-            -UseBasicParsing
+        $request = @{
+            Uri = "https://api.github.com/repos/$Repository/releases/latest"
+            Headers = $ApiHeaders
+            UseBasicParsing = $true
+        }
+        $release = Invoke-RestMethod @request
     }
     catch {
         throw "Could not resolve the latest PulseNet release: $($_.Exception.Message)"
