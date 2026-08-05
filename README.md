@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  A focused network diagnostics toolkit for websites, servers, DNS, TLS, HTTP, and explicit TCP port checks.
+  A focused network diagnostics toolkit for websites, servers, DNS, TLS, HTTP, page snapshots, and local web-server logs.
 </p>
 
 <p align="center">
@@ -21,20 +21,18 @@
 
 ### Windows application
 
-Click **Download for Windows** above to get `PulseNet.exe`. No Go installation is required. Open the downloaded file to launch the interactive terminal interface, or run it from PowerShell:
+Click **Download for Windows** above to get `PulseNet.exe`. No Go installation is required. Open it to launch the interactive terminal interface, or run it from PowerShell:
 
 ```powershell
 .\PulseNet.exe
 .\PulseNet.exe diagnose example.com
 ```
 
-PulseNet is currently distributed as an unsigned executable, so Windows SmartScreen may show an unknown-publisher warning. Verify the file checksum from the release before running it.
+PulseNet is currently unsigned, so Windows SmartScreen may display an unknown-publisher warning. Verify the SHA-256 checksum attached to the release before running the file.
 
 ### Source code
 
-Click **Source Code ZIP** above when you want to inspect, modify, or build PulseNet for your own tasks. The repository contains the complete Go source, tests, documentation, and build workflows.
-
-Linux and macOS binaries are available on the [Releases](https://github.com/appoloncel283-debug/pulsenet/releases) page.
+Click **Source Code ZIP** when you want to inspect, modify, or build PulseNet for your own tasks. Linux and macOS binaries are available on the [Releases](https://github.com/appoloncel283-debug/pulsenet/releases) page.
 
 ## Why PulseNet
 
@@ -42,42 +40,40 @@ PulseNet follows the same path a real request takes and reports where it breaks:
 
 **DNS → TCP → TLS → HTTP → browser security headers → recommendations**
 
-It is designed for practical troubleshooting, support reports, lightweight monitoring, and targeted server checks. It does not collect telemetry and does not silently upload reports.
+It also includes two practical website-maintenance tools:
+
+- **Site dump** saves one public HTTP response to a local folder with the body, redacted headers, metadata, redirects, and SHA-256 hash.
+- **Log viewer** reads local Nginx, Apache, JSONL, and plain-text logs with filters and live follow mode.
+
+PulseNet does not collect telemetry and does not silently upload reports, dumps, or logs.
 
 ## Features
 
-- **Full diagnosis** with a health score, verdict, and actionable recommendations.
-- **DNS comparison** across the system resolver, Cloudflare, and Google.
-- **DNS record lookup** for A, AAAA, CNAME, MX, NS, TXT, and PTR records.
-- **TCP stability checks** with success rate, min/average/max latency, and jitter.
-- **TLS inspection** with protocol, cipher suite, ALPN, certificate chain, expiry, hostname validation, and OCSP stapling status.
-- **HTTP timing breakdown** including DNS, connect, TLS, TTFB, and total request time.
-- **Security header audit** with a grade and focused remediation notes.
-- **Explicit port checks** for a single host and a user-supplied port list or range.
-- **HTTP benchmark** with throughput, success rate, p50/p90/p95/p99 latency, status distribution, and error grouping.
-- **Availability monitor** with uptime statistics and optional CSV logging.
-- **Route trace wrapper** using `tracert` on Windows or `traceroute` on Unix-like systems.
-- **JSON and text reports** suitable for automation and support tickets.
-- **Interactive terminal interface** when launched without arguments.
+- Full diagnosis with a health score, verdict, and actionable recommendations.
+- DNS comparison across the system resolver, Cloudflare, and Google.
+- DNS records: A, AAAA, CNAME, MX, NS, TXT, and PTR.
+- TCP stability checks with success rate, latency, loss, and jitter.
+- TLS inspection with protocol, cipher, ALPN, certificate chain, expiry, hostname validation, and OCSP stapling status.
+- HTTP phase timings including DNS, connect, TLS, TTFB, and total request time.
+- Security-header audit with grades and remediation notes.
+- Explicit bounded TCP port checks.
+- Controlled HTTP benchmark with p50/p90/p95/p99 latency and throughput.
+- Availability monitoring with optional CSV logging.
+- Public page snapshots with size limits and sensitive-header redaction.
+- Local website-log viewer with filters, JSON output, and follow mode.
+- Route tracing through the operating system tool.
+- JSON and text diagnostic reports.
+- Interactive terminal interface.
 
 ## Quick start
 
 ### Windows
 
-Download `PulseNet.exe` using the button at the top of this page, or build it locally:
-
 ```powershell
-build.bat
-.\bin\pulsenet-windows-amd64.exe diagnose example.com
-```
-
-### Linux
-
-Download the Linux binary from the GitHub Releases page, or build it locally:
-
-```bash
-./build.sh
-./bin/pulsenet-linux-amd64 diagnose example.com
+.\PulseNet.exe
+.\PulseNet.exe diagnose example.com
+.\PulseNet.exe dump https://example.com
+.\PulseNet.exe logs C:\nginx\logs\access.log --status 5xx --follow
 ```
 
 ### Build from source
@@ -98,40 +94,53 @@ pulsenet                                  interactive interface
 pulsenet diagnose <target>                full diagnosis
 pulsenet dns <domain-or-ip>               DNS records and resolver comparison
 pulsenet tls <domain-or-host:port>         TLS and certificate inspection
-pulsenet headers <url>                     security header audit
+pulsenet headers <url>                     security-header audit
 pulsenet ports <host> --ports <list>       explicit TCP port check
 pulsenet benchmark <url>                   HTTP benchmark
 pulsenet watch <url>                       availability monitor
+pulsenet dump <url>                        save a public page snapshot
+pulsenet logs <log-file>                   view, filter, and follow website logs
 pulsenet trace <host>                      route trace
 pulsenet support                           support address
 ```
 
-### Useful examples
+### Site dump examples
 
 ```bash
-# Full report for a website
-pulsenet diagnose https://example.com --report report.txt --json report.json
+# Save page body, headers, metadata, redirects, and SHA-256
+pulsenet dump https://example.com
 
-# Diagnose custom service ports
-pulsenet diagnose api.example.com --ports 443,8443 --attempts 5 --timeout 4s
+# Select the output directory and maximum body size
+pulsenet dump https://example.com --output snapshots/example --max-mb 32
 
-# Inspect DNS records and resolver differences
-pulsenet dns example.com
-
-# Audit browser-facing security headers
-pulsenet headers https://example.com
-
-# Check only ports you explicitly select
-pulsenet ports 192.168.1.20 --ports 22,80,443,8000-8010
-
-# Run a controlled HTTP benchmark
-pulsenet benchmark https://example.com --requests 100 --concurrency 10
-
-# Monitor availability and save samples
-pulsenet watch https://example.com --interval 10s --csv uptime.csv
+# Machine-readable result
+pulsenet dump https://example.com --json
 ```
 
-Detailed command documentation is available in [docs/COMMANDS.md](docs/COMMANDS.md).
+A dump stores one public response. It is deliberately not a crawler and does not copy an entire website or bypass authentication. `Set-Cookie`, `WWW-Authenticate`, and proxy-authentication response headers are redacted.
+
+### Website log examples
+
+```bash
+# Show the last 100 lines
+pulsenet logs /var/log/nginx/access.log
+
+# Show and follow 5xx requests
+pulsenet logs /var/log/nginx/access.log --status 5xx --follow
+
+# Filter errors containing a specific upstream name
+pulsenet logs /var/log/nginx/error.log --level error --contains upstream
+
+# Filter a Windows Nginx log
+pulsenet logs C:\nginx\logs\access.log --method POST --request-path /api --lines 250
+
+# Structured output for scripts
+pulsenet logs /var/log/nginx/access.log --status 400-599 --json
+```
+
+The log viewer reads files available on the current computer. To inspect production logs, run PulseNet on the server or securely copy the log file first; it does not attempt to obtain private server logs from a public website.
+
+Detailed options are documented in [docs/COMMANDS.md](docs/COMMANDS.md).
 
 ## Safety and scope
 
@@ -139,9 +148,11 @@ The `ports` command checks one host and requires an explicit port list. It accep
 
 The `benchmark` command generates real HTTP traffic. Start with a small request count and use it only against services you control or have permission to test.
 
+The `dump` command retrieves the public response returned to a normal unauthenticated GET request. Respect site terms, robots policies where applicable, copyright, and local law.
+
 ## Privacy
 
-PulseNet stores data only when you explicitly request a report or CSV file. DNS comparison sends the queried hostname to the selected public resolvers. HTTP and TLS checks connect directly to the target you provide. Environment proxy settings are honored.
+PulseNet stores data only when you explicitly request a report, CSV, site dump, or other output file. DNS comparison sends the queried hostname to the selected public resolvers. HTTP and TLS checks connect directly to the target you provide. Environment proxy settings are honored.
 
 ## Support the project
 
