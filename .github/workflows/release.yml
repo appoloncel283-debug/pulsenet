@@ -9,33 +9,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: pulsenet-download-release
-  cancel-in-progress: true
+  group: pulsenet-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - os: windows
-            arch: amd64
-            ext: .exe
-          - os: windows
-            arch: arm64
-            ext: .exe
-          - os: linux
-            arch: amd64
-            ext: ""
-          - os: linux
-            arch: arm64
-            ext: ""
-          - os: darwin
-            arch: amd64
-            ext: ""
-          - os: darwin
-            arch: arm64
-            ext: ""
+  build-and-publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -44,108 +24,135 @@ jobs:
           go-version: "1.23.x"
           cache: true
 
-      - name: Test
-        run: go test ./...
+      - name: Verify source
+        shell: bash
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l ./cmd ./internal)"
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+          go test ./...
+          go vet ./...
+
+      - name: Validate installer scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($path in @('Install-PulseNet.ps1', 'Uninstall-PulseNet.ps1')) {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $path),
+              [ref]$tokens,
+              [ref]$errors
+            )
+            if ($errors.Count -gt 0) {
+              $failed = $true
+              Write-Host "PowerShell parser errors in $path" -ForegroundColor Red
+              $errors | ForEach-Object { Write-Host $_.Message }
+            }
+          }
+          if ($failed) { exit 1 }
 
       - name: Build and package
+        shell: bash
         env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-          EXT: ${{ matrix.ext }}
-          CGO_ENABLED: 0
-          VERSION: 2.2.0
+          VERSION: 2.2.1
         run: |
+          set -euo pipefail
           mkdir -p dist
-          BASE="pulsenet-${GOOS}-${GOARCH}"
-          OUTPUT="${BASE}${EXT}"
 
-          go build -trimpath \
-            -ldflags "-s -w -X main.version=${VERSION}" \
-            -o "dist/${OUTPUT}" \
-            ./cmd/pulsenet
+          for target in \
+            windows/amd64 \
+            windows/arm64 \
+            linux/amd64 \
+            linux/arm64 \
+            darwin/amd64 \
+            darwin/arm64
+          do
+            os="${target%/*}"
+            arch="${target#*/}"
+            extension=""
+            if [ "$os" = "windows" ]; then extension=".exe"; fi
+            output="pulsenet-${os}-${arch}${extension}"
 
-          if [ "${GOOS}" = "windows" ]; then
-            zip -j "dist/${BASE}.zip" "dist/${OUTPUT}" README.md LICENSE
+            echo "Building $os/$arch"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
+              go build -trimpath \
+              -ldflags "-s -w -X main.version=${VERSION}" \
+              -o "dist/${output}" \
+              ./cmd/pulsenet
 
-            if [ "${GOARCH}" = "amd64" ]; then
-              cp "dist/${OUTPUT}" "dist/PulseNet.exe"
-              zip -j "dist/PulseNet-Windows.zip" \
-                "dist/PulseNet.exe" \
-                Install-PulseNet.ps1 \
-                Uninstall-PulseNet.ps1 \
-                README.md \
-                LICENSE
+            if [ "$os" = "windows" ]; then
+              zip -j "dist/pulsenet-${os}-${arch}.zip" \
+                "dist/${output}" README.md LICENSE
+            else
+              tar -czf "dist/pulsenet-${os}-${arch}.tar.gz" \
+                -C dist "${output}"
             fi
-          else
-            tar -czf "dist/${BASE}.tar.gz" -C dist "${OUTPUT}"
-          fi
+          done
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pulsenet-${{ matrix.os }}-${{ matrix.arch }}
-          path: dist/*
-          if-no-files-found: error
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-
-      - name: Add installer scripts
-        run: |
+          cp dist/pulsenet-windows-amd64.exe dist/PulseNet.exe
           cp Install-PulseNet.ps1 dist/Install-PulseNet.ps1
           cp Uninstall-PulseNet.ps1 dist/Uninstall-PulseNet.ps1
 
-      - name: Create checksums
+          zip -j dist/PulseNet-Windows.zip \
+            dist/PulseNet.exe \
+            Install-PulseNet.ps1 \
+            Uninstall-PulseNet.ps1 \
+            README.md \
+            LICENSE
+
+          ./dist/pulsenet-linux-amd64 version
+          ./dist/pulsenet-linux-amd64 help >/dev/null
+
+      - name: Create and verify checksums
+        shell: bash
         run: |
+          set -euo pipefail
           cd dist
-          sha256sum * > SHA256SUMS.txt
+          mapfile -t files < <(
+            find . -maxdepth 1 -type f ! -name SHA256SUMS.txt -printf '%f\n' | LC_ALL=C sort
+          )
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo 'No release files were produced.'
+            exit 1
+          fi
+          sha256sum "${files[@]}" > SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt
 
       - name: Prepare release notes
+        shell: bash
         run: |
           cat > RELEASE_NOTES.md <<'NOTES'
-          ## Downloads
+          ## Windows
 
-          **Recommended Windows setup:** download `Install-PulseNet.ps1`, inspect it, and run it with PowerShell. The installer verifies the official SHA-256 checksums, installs for the current user, and offers optional PATH, quick-command, and Start Menu setup.
+          Use `Install-PulseNet.ps1` for the guided current-user installation. It resolves one exact release tag, downloads every file from that same immutable release, and verifies SHA-256 before installing.
 
-          **Portable Windows app:** download `PulseNet.exe` and open it directly.
+          `PulseNet.exe` is also available as a portable application.
 
-          PulseNet 2.2 adds the verified PowerShell installer and removes repository-publishing helper scripts from the project tree.
+          ## Other platforms
 
-          Architecture-specific Windows, Linux, and macOS builds and SHA-256 checksums are attached below. Source code is available for inspection and unmodified personal or internal builds. Modification and redistribution require prior written permission under the repository license.
+          Linux and macOS archives are attached for amd64 and arm64. `SHA256SUMS.txt` contains checksums for every published asset.
 
-          > PulseNet is currently unsigned. Windows SmartScreen may show an unknown-publisher warning.
+          PulseNet is source-available under a no-modification license. Modification, derivative works, redistribution, and repackaging require prior written permission.
+
+          > Windows builds and installer scripts are currently unsigned. Windows may display an unknown-publisher warning.
           NOTES
 
-      - name: Publish downloadable applications
+      - name: Publish immutable GitHub release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: 2.2.1
         run: |
-          TAG="latest"
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f "${TAG}" "${GITHUB_SHA}"
-          git push origin "refs/tags/${TAG}" --force
-
-          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
-            gh release upload "${TAG}" dist/* --clobber --repo "${GITHUB_REPOSITORY}"
-            gh release edit "${TAG}" \
-              --title "PulseNet — Download" \
-              --notes-file RELEASE_NOTES.md \
-              --repo "${GITHUB_REPOSITORY}"
-          else
-            gh release create "${TAG}" dist/* \
-              --target "${GITHUB_SHA}" \
-              --title "PulseNet — Download" \
-              --notes-file RELEASE_NOTES.md \
-              --repo "${GITHUB_REPOSITORY}"
-          fi
+          set -euo pipefail
+          tag="v${VERSION}-build.${GITHUB_RUN_NUMBER}"
+          gh release create "$tag" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "PulseNet ${VERSION}" \
+            --notes-file RELEASE_NOTES.md
