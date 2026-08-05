@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.4.0 — 2026-08-05
+
+- Added one interactive Database Toolkit tab for client detection, schema exports, backups, and verification.
+- Added executable SHA-256 verification on every startup.
+- Added installed integrity manifests and an `integrity` command with text and JSON output.
+- Added a local router assistant that detects the default gateway, Wi-Fi SSID, gateway MAC, and reachable admin page.
+- Added safe browser opening through `router open` without reading, guessing, extracting, or submitting credentials.
+- Added `pnrouter` and `pnsha` optional quick commands.
+- Added integrity and router parser tests.
+- Updated the Windows installer, uninstaller, release packaging, and documentation.
+
 ## 2.3.0 — 2026-08-05
 
 - Added authorized PostgreSQL, MySQL/MariaDB, and SQLite database tooling.
