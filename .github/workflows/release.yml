@@ -54,7 +54,7 @@ jobs:
       - name: Build and package
         shell: bash
         env:
-          VERSION: 2.3.0
+          VERSION: 2.4.0
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -71,11 +71,28 @@ jobs:
               tar -czf "dist/pulsenet-${os}-${arch}.tar.gz" -C dist "${output}"
             fi
           done
+
           cp dist/pulsenet-windows-amd64.exe dist/PulseNet.exe
           cp Install-PulseNet.ps1 dist/Install-PulseNet.ps1
           cp Uninstall-PulseNet.ps1 dist/Uninstall-PulseNet.ps1
-          zip -j dist/PulseNet-Windows.zip dist/PulseNet.exe Install-PulseNet.ps1 Uninstall-PulseNet.ps1 README.md LICENSE
+
+          executable_hash="$(sha256sum dist/PulseNet.exe | awk '{print toupper($1)}')"
+          generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          cat > dist/integrity.json <<EOF
+          {
+            "product": "PulseNet",
+            "version": "${VERSION}",
+            "release_tag": "portable-release",
+            "executable": "PulseNet.exe",
+            "sha256": "${executable_hash}",
+            "generated_at": "${generated_at}"
+          }
+          EOF
+
+          zip -j dist/PulseNet-Windows.zip dist/PulseNet.exe dist/integrity.json Install-PulseNet.ps1 Uninstall-PulseNet.ps1 README.md LICENSE
+
           ./dist/pulsenet-linux-amd64 version
+          ./dist/pulsenet-linux-amd64 integrity --json >/dev/null
           ./dist/pulsenet-linux-amd64 db tools --json >/dev/null
 
       - name: Create and verify checksums
@@ -84,6 +101,10 @@ jobs:
           set -euo pipefail
           cd dist
           mapfile -t files < <(find . -maxdepth 1 -type f ! -name SHA256SUMS.txt -printf '%f\n' | LC_ALL=C sort)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo 'No release files were produced.'
+            exit 1
+          fi
           sha256sum "${files[@]}" > SHA256SUMS.txt
           sha256sum -c SHA256SUMS.txt
 
@@ -91,7 +112,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: 2.3.0
+          VERSION: 2.4.0
         run: |
           set -euo pipefail
           tag="v${VERSION}-build.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
