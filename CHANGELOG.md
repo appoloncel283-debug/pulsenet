@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.0 — 2026-08-05
+
+- Added `dump` / `site-dump` for saving a public page body, redacted response headers, metadata, redirects, and SHA-256.
+- Added response-size limits, generated output directories, content-aware file names, and truncation reporting.
+- Added `logs` / `log-viewer` for local Nginx, Apache, JSONL, and plain-text logs.
+- Added log tailing, live follow mode, JSON output, and filters for text, level, HTTP status, IP, method, and request path.
+- Added interactive-menu entries and documentation for site dumps and website logs.
+
 ## 2.0.0 — 2026-08-05
 
 - Reworked the entire interface and documentation in English.
