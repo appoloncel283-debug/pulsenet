@@ -7,10 +7,34 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/appoloncel283-debug/pulsenet/releases/download/latest/PulseNet.exe"><img alt="Download PulseNet for Windows" src="https://img.shields.io/badge/Download_for_Windows-PulseNet.exe-0078D4?style=for-the-badge&logo=windows"></a>
+  <a href="https://github.com/appoloncel283-debug/pulsenet/archive/refs/heads/main.zip"><img alt="Download source code" src="https://img.shields.io/badge/Download-Source_Code_ZIP-181717?style=for-the-badge&logo=github"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/appoloncel283-debug/pulsenet/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/appoloncel283-debug/pulsenet/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
   <img alt="Go 1.23+" src="https://img.shields.io/badge/Go-1.23%2B-00ADD8.svg">
 </p>
+
+## Download
+
+### Windows application
+
+Click **Download for Windows** above to get `PulseNet.exe`. No Go installation is required. Open the downloaded file to launch the interactive terminal interface, or run it from PowerShell:
+
+```powershell
+.\PulseNet.exe
+.\PulseNet.exe diagnose example.com
+```
+
+PulseNet is currently distributed as an unsigned executable, so Windows SmartScreen may show an unknown-publisher warning. Verify the file checksum from the release before running it.
+
+### Source code
+
+Click **Source Code ZIP** above when you want to inspect, modify, or build PulseNet for your own tasks. The repository contains the complete Go source, tests, documentation, and build workflows.
+
+Linux and macOS binaries are available on the [Releases](https://github.com/appoloncel283-debug/pulsenet/releases) page.
 
 ## Why PulseNet
 
@@ -40,7 +64,7 @@ It is designed for practical troubleshooting, support reports, lightweight monit
 
 ### Windows
 
-Download the Windows binary from the latest GitHub Release, or build it locally:
+Download `PulseNet.exe` using the button at the top of this page, or build it locally:
 
 ```powershell
 build.bat
@@ -49,7 +73,7 @@ build.bat
 
 ### Linux
 
-Download the Linux binary from the latest GitHub Release, or build it locally:
+Download the Linux binary from the GitHub Releases page, or build it locally:
 
 ```bash
 ./build.sh
