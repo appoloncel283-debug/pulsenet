@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Practical network, website-maintenance, log-analysis, and authorized database-backup tools in one Go binary.
+  Practical network, website-maintenance, authorized database-backup, integrity, and local router tools in one Go binary.
 </p>
 
 <p align="center">
@@ -26,13 +26,15 @@ Unblock-File -LiteralPath .\Install-PulseNet.ps1
 .\Install-PulseNet.ps1
 ```
 
-The installer pins one exact release, verifies SHA-256, installs for the current user, and can add `pulsenet` plus optional quick commands to PATH.
+The installer pins one exact release, verifies SHA-256, writes an integrity manifest, installs for the current user, and can add `pulsenet` plus optional quick commands to PATH.
 
 Silent installation with quick commands:
 
 ```powershell
 .\Install-PulseNet.ps1 -Quiet -QuickCommands
 ```
+
+Quick commands include `pn`, `pncheck`, `pnlogs`, `pndump`, `pnwatch`, `pnrouter`, and `pnsha`.
 
 ## Uninstall
 
@@ -44,70 +46,71 @@ Or run:
 & "$env:LOCALAPPDATA\Programs\PulseNet\Uninstall-PulseNet.ps1"
 ```
 
-For the portable build, simply delete `PulseNet.exe` and any reports or dumps you created.
+For the portable build, delete `PulseNet.exe`, `integrity.json`, and any reports or dumps you created.
+
+## Startup integrity verification
+
+PulseNet calculates its own SHA-256 every time it starts.
+
+- Installed builds compare the executable with `integrity.json` and report `verified` or `mismatch`.
+- Portable or development builds still display the current executable SHA-256, but report that no installed manifest is available.
+- The integrity message is written to stderr, so JSON command output remains valid.
+
+Show full details at any time:
+
+```powershell
+pulsenet integrity
+pulsenet integrity --json
+```
 
 ## Main capabilities
 
 - DNS, TCP, TLS, HTTP, security-header, port, benchmark, trace, and uptime diagnostics.
 - Public page snapshots with redacted sensitive response headers.
 - Local Nginx, Apache, JSONL, and text log viewing with filters and follow mode.
-- Site-dump comparison by body hash, HTTP status, and headers.
-- Local dump scanning for accidentally exposed keys or tokens; previews are redacted.
-- Authorized PostgreSQL, MySQL/MariaDB, and SQLite schema exports and backups.
-- Backup verification with SHA-256 plus PostgreSQL archive, SQLite integrity, or MySQL dump checks.
+- Site-dump comparison and local dump scanning for accidentally exposed secrets.
+- Authorized PostgreSQL, MySQL/MariaDB, and SQLite schema exports, backups, manifests, and verification.
+- Local router gateway detection and safe browser opening.
 - JSON/text reports and an interactive terminal interface.
 
 ## Database toolkit
 
-PulseNet wraps official client tools and never bypasses authentication. Install the database client for the engine you use, then check availability:
+The interactive interface now has one **Database toolkit** section for client detection, schema export, backup, and verification.
+
+PulseNet wraps official database clients and never bypasses authentication:
 
 ```powershell
 pulsenet db tools
-```
-
-SQLite:
-
-```powershell
 pulsenet db schema --engine sqlite --database .\app.db --output .\backups\schema.sql
-pulsenet db backup --engine sqlite --database .\app.db --output .\backups\app.db
-pulsenet db verify --engine sqlite --file .\backups\app.db
-```
-
-PostgreSQL:
-
-```powershell
-pulsenet db schema --engine postgres --database "postgresql://user@localhost/app" --output .\backups\schema.sql
 pulsenet db backup --engine postgres --database "postgresql://user@localhost/app" --output .\backups\app.dump
 pulsenet db verify --engine postgres --file .\backups\app.dump
 ```
 
-MySQL/MariaDB:
+Use environment variables or official client configuration for credentials. Avoid passwords in command-line arguments because command history and process listings may expose them.
+
+## Router assistant
+
+PulseNet can detect the current default gateway, Wi-Fi name, gateway MAC address, and a reachable local router admin page:
 
 ```powershell
-pulsenet db schema --engine mysql --database app --output .\backups\schema.sql --arg=--host=127.0.0.1 --arg=--user=backup
-pulsenet db backup --engine mysql --database app --output .\backups\app.sql --arg=--host=127.0.0.1 --arg=--user=backup
-pulsenet db verify --engine mysql --file .\backups\app.sql
+pulsenet router info
+pulsenet router open
 ```
 
-Use environment variables or the official client configuration for credentials. Do not put passwords directly in command history.
+The router assistant opens the detected admin page in the default browser. It does **not** read, guess, extract, or submit router usernames or passwords. A browser may offer credentials that you previously saved in its own password manager.
+
+For forgotten router credentials, use the label on the router, the ISP application or documentation, or the manufacturer's supported reset process.
 
 ## Website maintenance tools
-
-Create two snapshots and compare them:
 
 ```powershell
 pulsenet dump https://example.com --output .\dumps\before
 pulsenet dump https://example.com --output .\dumps\after
 pulsenet site-diff --old .\dumps\before --new .\dumps\after
-```
-
-Check a local dump before publishing or sharing it:
-
-```powershell
 pulsenet site-secrets --dump .\dumps\after
 ```
 
-This scans only local files and reports redacted previews. It does not retrieve private server data.
+`site-secrets` scans only local files and prints redacted previews. It does not retrieve private server data.
 
 ## Command overview
 
@@ -120,28 +123,29 @@ pulsenet ports <host> --ports <list>       explicit TCP port check
 pulsenet benchmark <url>                   controlled HTTP benchmark
 pulsenet watch <url>                       availability monitor
 pulsenet dump <url>                        save a public page snapshot
-pulsenet logs <log-file>                   view/filter/follow local website logs
-pulsenet site-diff                         compare two local dump directories
-pulsenet site-secrets                      scan a local dump for exposed secrets
-pulsenet db tools                          detect official database clients
-pulsenet db schema                         authorized schema-only export
-pulsenet db backup                         authorized database backup
-pulsenet db verify                         verify a backup or dump
+pulsenet logs <log-file>                   view and follow local website logs
+pulsenet site-diff                         compare two local site dumps
+pulsenet site-secrets                      scan one local dump
+pulsenet db <subcommand>                   authorized database toolkit
+pulsenet router <info|open>                local router assistant
+pulsenet integrity                         executable SHA-256 verification
 pulsenet trace <host>                      route trace
 pulsenet support                           support address
 ```
 
-Detailed options are in [docs/COMMANDS.md](docs/COMMANDS.md).
+Detailed options are documented in [docs/COMMANDS.md](docs/COMMANDS.md).
 
 ## Safety and privacy
 
-Use network checks, benchmarks, site tools, and database operations only on systems you own or are explicitly authorized to maintain. Database commands require a local database file or credentials accepted by the official client. PulseNet does not contain authentication bypasses or credential-discovery features.
+Use port checks, benchmarks, database operations, and site-maintenance commands only on systems you own or are explicitly authorized to maintain.
 
-PulseNet does not collect telemetry or silently upload reports, logs, dumps, or backups.
+PulseNet does not collect telemetry and does not silently upload reports, dumps, logs, credentials, or router information.
 
 ## Source availability and license
 
-The source is available for inspection, security review, education, evaluation, and compilation of an unmodified personal or internal copy. Modification, derivative works, redistribution, repackaging, sublicensing, and commercial exploitation require prior written permission. See [LICENSE](LICENSE).
+The source code is available for inspection, security review, education, evaluation, and compilation of an unmodified personal or internal copy.
+
+Modification, derivative works, redistribution, repackaging, sublicensing, and commercial exploitation are not permitted without prior written permission. See the [PulseNet Source-Available No-Modification License 1.1](LICENSE).
 
 ## Support the project
 
