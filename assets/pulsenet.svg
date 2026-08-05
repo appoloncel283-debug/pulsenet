@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" role="img" aria-labelledby="title desc">
+  <title id="title">PulseNet</title>
+  <desc id="desc">PulseNet network diagnostics logo</desc>
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#00c2ff"/>
+      <stop offset="1" stop-color="#5b6cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="180" rx="32" fill="#0b1020"/>
+  <circle cx="92" cy="90" r="55" fill="none" stroke="url(#g)" stroke-width="10"/>
+  <path d="M38 92h28l12-30 19 62 16-44 12 12h24" fill="none" stroke="url(#g)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="174" y="112" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700" fill="#f4f7ff">PulseNet</text>
+</svg>

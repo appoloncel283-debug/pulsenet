@@ -1,0 +1,12 @@
+/bin/
+/dist/
+/reports/
+*.log
+*.csv
+*.jsonl
+*.prof
+coverage.out
+pulsenet
+pulsenet.exe
+.DS_Store
+Thumbs.db
