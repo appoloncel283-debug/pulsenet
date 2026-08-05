@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/appoloncel283-debug/pulsenet/releases/latest/download/Install-PulseNet.ps1"><img alt="Download PulseNet for Windows" src="https://img.shields.io/badge/Download_for_Windows-Installer-0078D4?style=for-the-badge&logo=windows"></a>
+  <a href="https://github.com/appoloncel283-debug/pulsenet/raw/refs/heads/main/Install-PulseNet.ps1"><img alt="Download PulseNet for Windows" src="https://img.shields.io/badge/Download_for_Windows-Installer-0078D4?style=for-the-badge&logo=windows"></a>
   <a href="https://github.com/appoloncel283-debug/pulsenet/archive/refs/heads/main.zip"><img alt="Download source code" src="https://img.shields.io/badge/Download-Source_Code_ZIP-181717?style=for-the-badge&logo=github"></a>
 </p>
 
@@ -26,15 +26,43 @@ Unblock-File -LiteralPath .\Install-PulseNet.ps1
 .\Install-PulseNet.ps1
 ```
 
-The installer pins one exact release, verifies SHA-256, writes an integrity manifest, installs for the current user, and can add `pulsenet` plus optional quick commands to PATH.
+The download button points to the current installer source, not an installer copied into an older release. The installer refuses PulseNet releases older than 2.4.0, pins one exact immutable release, verifies SHA-256, installs the executable, writes an integrity manifest, and runs command smoke tests before reporting success.
 
-Silent installation with quick commands:
+Quick commands are enabled by default and include `pn`, `pncheck`, `pnlogs`, `pndump`, `pnwatch`, `pnrouter`, and `pnsha`. Disable them with:
 
 ```powershell
-.\Install-PulseNet.ps1 -Quiet -QuickCommands
+.\Install-PulseNet.ps1 -NoQuickCommands
 ```
 
-Quick commands include `pn`, `pncheck`, `pnlogs`, `pndump`, `pnwatch`, `pnrouter`, and `pnsha`.
+Silent installation:
+
+```powershell
+.\Install-PulseNet.ps1 -Quiet -QuickCommands -Force
+```
+
+### Repair an older installation
+
+First check the installed version:
+
+```powershell
+pulsenet version
+```
+
+If it is older than 2.4.0, download the installer again from **Download for Windows** and run:
+
+```powershell
+Unblock-File -LiteralPath .\Install-PulseNet.ps1
+.\Install-PulseNet.ps1 -Force -QuickCommands
+```
+
+Close and reopen PowerShell after installation, then verify:
+
+```powershell
+pulsenet version
+pulsenet integrity
+pnsha
+pnrouter
+```
 
 ## Uninstall
 
@@ -75,7 +103,7 @@ pulsenet integrity --json
 
 ## Database toolkit
 
-The interactive interface now has one **Database toolkit** section for client detection, schema export, backup, and verification.
+The interactive interface has one **Database toolkit** section for client detection, schema export, backup, and verification.
 
 PulseNet wraps official database clients and never bypasses authentication:
 
