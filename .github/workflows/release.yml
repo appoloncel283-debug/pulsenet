@@ -36,7 +36,7 @@ jobs:
         shell: pwsh
         run: |
           $failed = $false
-          foreach ($path in @('Install-PulseNet.ps1', 'Uninstall-PulseNet.ps1', 'PulseNet-Security.ps1')) {
+          foreach ($path in @('Install-PulseNet.ps1', 'Uninstall-PulseNet.ps1', 'PulseNet-Security.ps1', 'Install-PulseNet-Security.ps1')) {
             $tokens = $null
             $errors = $null
             $resolvedPath = (Resolve-Path $path).Path
@@ -77,6 +77,7 @@ jobs:
           cp Install-PulseNet.ps1 dist/Install-PulseNet.ps1
           cp Uninstall-PulseNet.ps1 dist/Uninstall-PulseNet.ps1
           cp PulseNet-Security.ps1 dist/PulseNet-Security.ps1
+          cp Install-PulseNet-Security.ps1 dist/Install-PulseNet-Security.ps1
           cp pnsec.cmd dist/pnsec.cmd
 
           executable_hash="$(sha256sum dist/PulseNet.exe | awk '{print toupper($1)}')"
@@ -98,6 +99,7 @@ jobs:
             Install-PulseNet.ps1 \
             Uninstall-PulseNet.ps1 \
             PulseNet-Security.ps1 \
+            Install-PulseNet-Security.ps1 \
             pnsec.cmd \
             README.md \
             SECURITY_TOOLKIT.md \
@@ -107,6 +109,7 @@ jobs:
             dist/PulseNet.exe \
             dist/integrity.json \
             PulseNet-Security.ps1 \
+            Install-PulseNet-Security.ps1 \
             pnsec.cmd \
             SECURITY_TOOLKIT.md \
             LICENSE
