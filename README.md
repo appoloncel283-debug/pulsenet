@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Practical network diagnostics for websites, servers, DNS, TLS, HTTP, page snapshots, and local web-server logs.
+  Practical network, website-maintenance, log-analysis, and authorized database-backup tools in one Go binary.
 </p>
 
 <p align="center">
@@ -19,25 +19,14 @@
 
 ## Install on Windows
 
-Click **Download for Windows** above. The button downloads the official guided installer.
-
-Review the downloaded script, then run it from PowerShell:
+Click **Download for Windows**, review the downloaded script, then run:
 
 ```powershell
 Unblock-File -LiteralPath .\Install-PulseNet.ps1
 .\Install-PulseNet.ps1
 ```
 
-The installer:
-
-- resolves one exact GitHub release tag before downloading anything;
-- downloads the executable, uninstaller, and checksum manifest from that same release;
-- verifies SHA-256 before installing;
-- installs only for the current Windows user;
-- optionally adds `pulsenet` to the user PATH;
-- optionally installs `pn`, `pncheck`, `pnlogs`, `pndump`, and `pnwatch`;
-- optionally creates a Start Menu shortcut;
-- registers an uninstaller in Windows Settings.
+The installer pins one exact release, verifies SHA-256, installs for the current user, and can add `pulsenet` plus optional quick commands to PATH.
 
 Silent installation with quick commands:
 
@@ -45,83 +34,114 @@ Silent installation with quick commands:
 .\Install-PulseNet.ps1 -Quiet -QuickCommands
 ```
 
-Custom installation folder:
+## Uninstall
+
+Use **Windows Settings → Apps → Installed apps → PulseNet → Uninstall**.
+
+Or run:
 
 ```powershell
-.\Install-PulseNet.ps1 -InstallDirectory D:\Tools\PulseNet
+& "$env:LOCALAPPDATA\Programs\PulseNet\Uninstall-PulseNet.ps1"
 ```
 
-A portable `PulseNet.exe`, packaged Windows builds, Linux builds, macOS builds, and `SHA256SUMS.txt` are available on the [Releases](https://github.com/appoloncel283-debug/pulsenet/releases) page.
+For the portable build, simply delete `PulseNet.exe` and any reports or dumps you created.
 
-PulseNet is currently unsigned, so Windows may display an unknown-publisher warning.
+## Main capabilities
 
-## Features
+- DNS, TCP, TLS, HTTP, security-header, port, benchmark, trace, and uptime diagnostics.
+- Public page snapshots with redacted sensitive response headers.
+- Local Nginx, Apache, JSONL, and text log viewing with filters and follow mode.
+- Site-dump comparison by body hash, HTTP status, and headers.
+- Local dump scanning for accidentally exposed keys or tokens; previews are redacted.
+- Authorized PostgreSQL, MySQL/MariaDB, and SQLite schema exports and backups.
+- Backup verification with SHA-256 plus PostgreSQL archive, SQLite integrity, or MySQL dump checks.
+- JSON/text reports and an interactive terminal interface.
 
-- Full DNS → TCP → TLS → HTTP diagnosis with a score and recommendations.
-- DNS records and comparison between the system resolver, Cloudflare, and Google.
-- TCP latency, loss, and jitter checks.
-- TLS protocol, cipher, ALPN, certificate chain, expiry, hostname, and OCSP details.
-- HTTP DNS/connect/TLS/TTFB/total timing breakdown.
-- Browser security-header audit.
-- Explicit bounded TCP port checks.
-- Controlled HTTP benchmark with latency percentiles and throughput.
-- Availability monitoring with optional CSV logging.
-- Public page snapshots with size limits and sensitive-header redaction.
-- Local Nginx, Apache, JSONL, and plain-text log viewing with filters and follow mode.
-- Route tracing, JSON reports, text reports, and an interactive terminal interface.
+## Database toolkit
 
-## Commands
+PulseNet wraps official client tools and never bypasses authentication. Install the database client for the engine you use, then check availability:
+
+```powershell
+pulsenet db tools
+```
+
+SQLite:
+
+```powershell
+pulsenet db schema --engine sqlite --database .\app.db --output .\backups\schema.sql
+pulsenet db backup --engine sqlite --database .\app.db --output .\backups\app.db
+pulsenet db verify --engine sqlite --file .\backups\app.db
+```
+
+PostgreSQL:
+
+```powershell
+pulsenet db schema --engine postgres --database "postgresql://user@localhost/app" --output .\backups\schema.sql
+pulsenet db backup --engine postgres --database "postgresql://user@localhost/app" --output .\backups\app.dump
+pulsenet db verify --engine postgres --file .\backups\app.dump
+```
+
+MySQL/MariaDB:
+
+```powershell
+pulsenet db schema --engine mysql --database app --output .\backups\schema.sql --arg=--host=127.0.0.1 --arg=--user=backup
+pulsenet db backup --engine mysql --database app --output .\backups\app.sql --arg=--host=127.0.0.1 --arg=--user=backup
+pulsenet db verify --engine mysql --file .\backups\app.sql
+```
+
+Use environment variables or the official client configuration for credentials. Do not put passwords directly in command history.
+
+## Website maintenance tools
+
+Create two snapshots and compare them:
+
+```powershell
+pulsenet dump https://example.com --output .\dumps\before
+pulsenet dump https://example.com --output .\dumps\after
+pulsenet site-diff --old .\dumps\before --new .\dumps\after
+```
+
+Check a local dump before publishing or sharing it:
+
+```powershell
+pulsenet site-secrets --dump .\dumps\after
+```
+
+This scans only local files and reports redacted previews. It does not retrieve private server data.
+
+## Command overview
 
 ```text
-pulsenet                                  interactive interface
-pulsenet diagnose <target>                full diagnosis
+pulsenet diagnose <target>                full DNS/TCP/TLS/HTTP diagnosis
 pulsenet dns <domain-or-ip>               DNS records and resolver comparison
 pulsenet tls <domain-or-host:port>         TLS and certificate inspection
 pulsenet headers <url>                     security-header audit
 pulsenet ports <host> --ports <list>       explicit TCP port check
-pulsenet benchmark <url>                   HTTP benchmark
+pulsenet benchmark <url>                   controlled HTTP benchmark
 pulsenet watch <url>                       availability monitor
 pulsenet dump <url>                        save a public page snapshot
-pulsenet logs <log-file>                   view, filter, and follow website logs
+pulsenet logs <log-file>                   view/filter/follow local website logs
+pulsenet site-diff                         compare two local dump directories
+pulsenet site-secrets                      scan a local dump for exposed secrets
+pulsenet db tools                          detect official database clients
+pulsenet db schema                         authorized schema-only export
+pulsenet db backup                         authorized database backup
+pulsenet db verify                         verify a backup or dump
 pulsenet trace <host>                      route trace
 pulsenet support                           support address
 ```
 
-Examples:
-
-```powershell
-pulsenet diagnose example.com --report report.txt --json report.json
-pulsenet dump https://example.com --output snapshots\example
-pulsenet logs C:\nginx\logs\access.log --status 5xx --follow
-pulsenet ports 192.168.1.20 --ports 22,80,443,8000-8010
-pulsenet benchmark https://example.com --requests 100 --concurrency 10
-```
-
-Detailed options are documented in [docs/COMMANDS.md](docs/COMMANDS.md).
-
-## Build an unmodified copy
-
-Go 1.23 or newer is required.
-
-```bash
-git clone https://github.com/appoloncel283-debug/pulsenet.git
-cd pulsenet
-go test ./...
-go vet ./...
-go build -o pulsenet ./cmd/pulsenet
-```
+Detailed options are in [docs/COMMANDS.md](docs/COMMANDS.md).
 
 ## Safety and privacy
 
-Use port checks and benchmarks only on systems you own or are authorized to test. The log viewer reads files already available on the current computer; it does not obtain private logs from a public website.
+Use network checks, benchmarks, site tools, and database operations only on systems you own or are explicitly authorized to maintain. Database commands require a local database file or credentials accepted by the official client. PulseNet does not contain authentication bypasses or credential-discovery features.
 
-PulseNet does not collect telemetry and does not silently upload reports, dumps, or logs. DNS comparison sends the queried hostname to the selected public resolvers. HTTP and TLS checks connect to the target supplied by the user.
+PulseNet does not collect telemetry or silently upload reports, logs, dumps, or backups.
 
 ## Source availability and license
 
-The source code is available for inspection, security review, education, evaluation, and compilation of an unmodified personal or internal copy.
-
-Modification, derivative works, redistribution, repackaging, sublicensing, and commercial exploitation are not permitted without prior written permission. See the [PulseNet Source-Available No-Modification License 1.1](LICENSE).
+The source is available for inspection, security review, education, evaluation, and compilation of an unmodified personal or internal copy. Modification, derivative works, redistribution, repackaging, sublicensing, and commercial exploitation require prior written permission. See [LICENSE](LICENSE).
 
 ## Support the project
 

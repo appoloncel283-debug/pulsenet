@@ -1,44 +1,35 @@
 # Changelog
 
+## 2.3.0 — 2026-08-05
+
+- Added authorized PostgreSQL, MySQL/MariaDB, and SQLite database tooling.
+- Added official-client detection with version reporting.
+- Added schema-only exports and full backups with SHA-256 manifests.
+- Added PostgreSQL archive, SQLite integrity, and MySQL dump verification.
+- Added site-dump comparison for body, status, and header changes.
+- Added local dump scanning for accidentally exposed keys and tokens with redacted previews.
+- Added focused unit tests for database engine parsing, file hashing, and site-dump comparison.
+- Added clearer uninstall and credential-handling documentation.
+
 ## 2.2.1 — 2026-08-05
 
 - Fixed SHA-256 installation failures by resolving one exact release tag and downloading every verified asset from that immutable release.
-- Replaced the fragile checksum-line parser with a whitespace-tolerant filename-aware parser.
-- Changed the Windows download button to use GitHub's latest-release asset route.
-- Reworked CI into deterministic formatting, test, vet, cross-build, PowerShell syntax, and checksum-format checks.
-- Reworked release publishing into one verified build job with immutable per-run releases and no force-pushed tags.
-- Clarified the source-available no-modification license and removed remaining MIT references from the current project files.
+- Reworked CI and release validation.
+- Clarified the source-available no-modification license.
 
 ## 2.2.0 — 2026-08-05
 
-- Added a guided PowerShell installer for current-user Windows installations.
-- Added SHA-256 verification before the installer accepts downloaded release files.
-- Added optional user PATH setup, Start Menu shortcut creation, and quick commands: `pn`, `pncheck`, `pnlogs`, `pndump`, and `pnwatch`.
-- Added a Windows Settings uninstaller and a standalone PowerShell uninstaller.
-- Removed `publish-github.bat` and `publish-github.sh` from the repository.
-- Replaced the MIT license with a source-available license that does not permit modification or derivative works without prior written permission.
-- Updated release packaging to publish installer scripts and their checksums.
+- Added a guided current-user PowerShell installer and uninstaller.
+- Added optional PATH, Start Menu, and quick-command setup.
+- Removed repository publishing helper scripts.
 
 ## 2.1.0 — 2026-08-05
 
-- Added `dump` / `site-dump` for saving a public page body, redacted response headers, metadata, redirects, and SHA-256.
-- Added response-size limits, generated output directories, content-aware file names, and truncation reporting.
-- Added `logs` / `log-viewer` for local Nginx, Apache, JSONL, and plain-text logs.
-- Added log tailing, live follow mode, JSON output, and filters for text, level, HTTP status, IP, method, and request path.
-- Added interactive-menu entries and documentation for site dumps and website logs.
+- Added public page dumps and local website-log viewing.
 
 ## 2.0.0 — 2026-08-05
 
-- Reworked the entire interface and documentation in English.
-- Added DNS record lookup and multi-resolver comparison.
-- Added HTTP phase timings and selected response metadata.
-- Expanded TLS details with ALPN, chain length, serial number, and OCSP stapling status.
-- Added a security-header audit with grades and remediation notes.
-- Added explicit bounded TCP port checks.
-- Added an HTTP benchmark with percentiles and throughput.
-- Added availability monitoring with CSV output.
-- Added a platform route-trace wrapper.
-- Added CI, automated release builds, issue templates, and project documentation.
+- Added the expanded network diagnostics toolkit and release automation.
 
 ## 1.0.0
 

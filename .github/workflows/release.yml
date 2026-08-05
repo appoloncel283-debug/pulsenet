@@ -18,7 +18,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-go@v5
         with:
           go-version: "1.23.x"
@@ -30,7 +29,6 @@ jobs:
           set -euo pipefail
           unformatted="$(gofmt -l ./cmd ./internal)"
           if [ -n "$unformatted" ]; then
-            echo "The following files are not formatted:"
             echo "$unformatted"
             exit 1
           fi
@@ -45,14 +43,9 @@ jobs:
             $tokens = $null
             $errors = $null
             $resolvedPath = (Resolve-Path $path).Path
-            [void][System.Management.Automation.Language.Parser]::ParseFile(
-              $resolvedPath,
-              [ref]$tokens,
-              [ref]$errors
-            )
+            [void][System.Management.Automation.Language.Parser]::ParseFile($resolvedPath, [ref]$tokens, [ref]$errors)
             if ($errors.Count -gt 0) {
               $failed = $true
-              Write-Host "PowerShell parser errors in $path" -ForegroundColor Red
               $errors | ForEach-Object { Write-Host $_.Message }
             }
           }
@@ -61,99 +54,45 @@ jobs:
       - name: Build and package
         shell: bash
         env:
-          VERSION: 2.2.1
+          VERSION: 2.3.0
         run: |
           set -euo pipefail
           mkdir -p dist
-
-          for target in \
-            windows/amd64 \
-            windows/arm64 \
-            linux/amd64 \
-            linux/arm64 \
-            darwin/amd64 \
-            darwin/arm64
-          do
+          for target in windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
             os="${target%/*}"
             arch="${target#*/}"
             extension=""
             if [ "$os" = "windows" ]; then extension=".exe"; fi
             output="pulsenet-${os}-${arch}${extension}"
-
-            echo "Building $os/$arch"
-            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
-              go build -trimpath \
-              -ldflags "-s -w -X main.version=${VERSION}" \
-              -o "dist/${output}" \
-              ./cmd/pulsenet
-
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o "dist/${output}" ./cmd/pulsenet
             if [ "$os" = "windows" ]; then
-              zip -j "dist/pulsenet-${os}-${arch}.zip" \
-                "dist/${output}" README.md LICENSE
+              zip -j "dist/pulsenet-${os}-${arch}.zip" "dist/${output}" README.md LICENSE
             else
-              tar -czf "dist/pulsenet-${os}-${arch}.tar.gz" \
-                -C dist "${output}"
+              tar -czf "dist/pulsenet-${os}-${arch}.tar.gz" -C dist "${output}"
             fi
           done
-
           cp dist/pulsenet-windows-amd64.exe dist/PulseNet.exe
           cp Install-PulseNet.ps1 dist/Install-PulseNet.ps1
           cp Uninstall-PulseNet.ps1 dist/Uninstall-PulseNet.ps1
-
-          zip -j dist/PulseNet-Windows.zip \
-            dist/PulseNet.exe \
-            Install-PulseNet.ps1 \
-            Uninstall-PulseNet.ps1 \
-            README.md \
-            LICENSE
-
+          zip -j dist/PulseNet-Windows.zip dist/PulseNet.exe Install-PulseNet.ps1 Uninstall-PulseNet.ps1 README.md LICENSE
           ./dist/pulsenet-linux-amd64 version
-          ./dist/pulsenet-linux-amd64 help >/dev/null
+          ./dist/pulsenet-linux-amd64 db tools --json >/dev/null
 
       - name: Create and verify checksums
         shell: bash
         run: |
           set -euo pipefail
           cd dist
-          mapfile -t files < <(
-            find . -maxdepth 1 -type f ! -name SHA256SUMS.txt -printf '%f\n' | LC_ALL=C sort
-          )
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo 'No release files were produced.'
-            exit 1
-          fi
+          mapfile -t files < <(find . -maxdepth 1 -type f ! -name SHA256SUMS.txt -printf '%f\n' | LC_ALL=C sort)
           sha256sum "${files[@]}" > SHA256SUMS.txt
           sha256sum -c SHA256SUMS.txt
-
-      - name: Prepare release notes
-        shell: bash
-        run: |
-          cat > RELEASE_NOTES.md <<'NOTES'
-          ## Windows
-
-          Use `Install-PulseNet.ps1` for the guided current-user installation. It resolves one exact release tag, downloads every file from that same immutable release, and verifies SHA-256 before installing.
-
-          `PulseNet.exe` is also available as a portable application.
-
-          ## Other platforms
-
-          Linux and macOS archives are attached for amd64 and arm64. `SHA256SUMS.txt` contains checksums for every published asset.
-
-          PulseNet is source-available under a no-modification license. Modification, derivative works, redistribution, and repackaging require prior written permission.
-
-          > Windows builds and installer scripts are currently unsigned. Windows may display an unknown-publisher warning.
-          NOTES
 
       - name: Publish immutable GitHub release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: 2.2.1
+          VERSION: 2.3.0
         run: |
           set -euo pipefail
           tag="v${VERSION}-build.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
-          gh release create "$tag" dist/* \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "PulseNet ${VERSION}" \
-            --notes-file RELEASE_NOTES.md
+          gh release create "$tag" dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "PulseNet ${VERSION}" --generate-notes
