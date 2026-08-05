@@ -17,18 +17,18 @@ import (
 )
 
 type RouterInfo struct {
-	GatewayIP     string    `json:"gateway_ip"`
-	AdminURL      string    `json:"admin_url,omitempty"`
-	SSID          string    `json:"ssid,omitempty"`
-	GatewayMAC    string    `json:"gateway_mac,omitempty"`
-	HTTPStatus    string    `json:"http_status,omitempty"`
-	PageTitle     string    `json:"page_title,omitempty"`
-	ServerHeader  string    `json:"server_header,omitempty"`
-	CheckedAt     time.Time `json:"checked_at"`
-	HTTPS         bool      `json:"https"`
-	Reachable     bool      `json:"reachable"`
-	Notes         []string  `json:"notes,omitempty"`
-	ProbeErrors   []string  `json:"probe_errors,omitempty"`
+	GatewayIP    string    `json:"gateway_ip"`
+	AdminURL     string    `json:"admin_url,omitempty"`
+	SSID         string    `json:"ssid,omitempty"`
+	GatewayMAC   string    `json:"gateway_mac,omitempty"`
+	HTTPStatus   string    `json:"http_status,omitempty"`
+	PageTitle    string    `json:"page_title,omitempty"`
+	ServerHeader string    `json:"server_header,omitempty"`
+	CheckedAt    time.Time `json:"checked_at"`
+	HTTPS        bool      `json:"https"`
+	Reachable    bool      `json:"reachable"`
+	Notes        []string  `json:"notes,omitempty"`
+	ProbeErrors  []string  `json:"probe_errors,omitempty"`
 }
 
 var (
@@ -50,10 +50,10 @@ func InspectRouter(ctx context.Context, timeout time.Duration) (RouterInfo, erro
 		return RouterInfo{}, err
 	}
 	info := RouterInfo{
-		GatewayIP: gateway,
-		SSID:      DetectCurrentSSID(ctx, timeout),
+		GatewayIP:  gateway,
+		SSID:       DetectCurrentSSID(ctx, timeout),
 		GatewayMAC: DetectGatewayMAC(ctx, gateway, timeout),
-		CheckedAt: time.Now(),
+		CheckedAt:  time.Now(),
 		Notes: []string{
 			"PulseNet never reads, guesses, extracts, or submits router credentials.",
 			"Your browser may offer credentials that you previously saved in its own password manager.",
@@ -76,7 +76,6 @@ func InspectRouter(ctx context.Context, timeout time.Duration) (RouterInfo, erro
 		return info, nil
 	}
 
-	// The browser may still reach a page that rejected the lightweight probe.
 	info.AdminURL = "http://" + gateway
 	info.Notes = append(info.Notes, "No admin page answered the lightweight probe; the detected gateway can still be opened manually.")
 	return info, nil
@@ -87,15 +86,15 @@ func DetectDefaultGateway(ctx context.Context, timeout time.Duration) (string, e
 	defer cancel()
 
 	var attempts []struct {
-		name string
-		args []string
+		name  string
+		args  []string
 		parse func(string) string
 	}
 	switch runtime.GOOS {
 	case "windows":
 		attempts = []struct {
-			name string
-			args []string
+			name  string
+			args  []string
 			parse func(string) string
 		}{
 			{"route", []string{"print", "-4"}, parseWindowsGateway},
@@ -103,8 +102,8 @@ func DetectDefaultGateway(ctx context.Context, timeout time.Duration) (string, e
 		}
 	case "darwin":
 		attempts = []struct {
-			name string
-			args []string
+			name  string
+			args  []string
 			parse func(string) string
 		}{
 			{"route", []string{"-n", "get", "default"}, parseUnixRouteGateway},
@@ -112,8 +111,8 @@ func DetectDefaultGateway(ctx context.Context, timeout time.Duration) (string, e
 		}
 	default:
 		attempts = []struct {
-			name string
-			args []string
+			name  string
+			args  []string
 			parse func(string) string
 		}{
 			{"ip", []string{"route", "show", "default"}, parseIPRouteGateway},
@@ -157,6 +156,7 @@ func DetectCurrentSSID(ctx context.Context, timeout time.Duration) string {
 			if value := strings.TrimSpace(string(output)); value != "" {
 				return value
 			}
+		}
 		if output, err := exec.CommandContext(commandCtx, "nmcli", "-t", "-f", "active,ssid", "dev", "wifi").CombinedOutput(); err == nil {
 			for _, line := range strings.Split(string(output), "\n") {
 				if strings.HasPrefix(line, "yes:") {
