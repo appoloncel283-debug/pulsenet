@@ -12,7 +12,7 @@ import (
 	"github.com/appoloncel283-debug/pulsenet/internal/ui"
 )
 
-var version = "2.1.0"
+var version = "2.2.0"
 
 func main() {
 	if len(os.Args) == 1 {
