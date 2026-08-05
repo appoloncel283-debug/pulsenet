@@ -53,7 +53,7 @@ jobs:
           GOARCH: ${{ matrix.arch }}
           EXT: ${{ matrix.ext }}
           CGO_ENABLED: 0
-          VERSION: 2.1.0
+          VERSION: 2.2.0
         run: |
           mkdir -p dist
           BASE="pulsenet-${GOOS}-${GOARCH}"
@@ -118,7 +118,7 @@ jobs:
 
           **Portable Windows app:** download `PulseNet.exe` and open it directly.
 
-          PulseNet includes public page snapshots and a local website-log viewer with filtering and live follow mode.
+          PulseNet 2.2 adds the verified PowerShell installer and removes repository-publishing helper scripts from the project tree.
 
           Architecture-specific Windows, Linux, and macOS builds and SHA-256 checksums are attached below. Source code is available for inspection and unmodified personal or internal builds. Modification and redistribution require prior written permission under the repository license.
 
