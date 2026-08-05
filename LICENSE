@@ -1,4 +1,4 @@
-PulseNet Source-Available License 1.0
+PulseNet Source-Available No-Modification License 1.1
 
 Copyright (c) 2026 appoloncel283-debug. All rights reserved.
 
@@ -13,32 +13,32 @@ You may:
 - Compile an unmodified copy of the source code for your own personal or internal use.
 - Make reasonable backup copies of unmodified official release binaries.
 
-2. No modification or derivative works
+2. No modifications or derivative works
 
-You may not modify, adapt, translate, patch, merge, transform, or create derivative works based on the source code or binaries, in whole or in part, without prior written permission from the copyright holder.
+You may not modify, adapt, translate, patch, merge, transform, alter, or create derivative works based on the source code or binaries, in whole or in part, without prior written permission from the copyright holder.
 
 3. No redistribution or commercial exploitation
 
-Without prior written permission from the copyright holder, you may not redistribute, republish, mirror, repackage, sublicense, sell, rent, lease, monetize, or provide PulseNet or substantial portions of it to third parties. You may link to the official repository or official release downloads.
+Without prior written permission from the copyright holder, you may not redistribute, republish, mirror, repackage, sublicense, sell, rent, lease, monetize, host for third parties, or provide PulseNet or substantial portions of it to third parties. You may link to the official repository and official release downloads.
 
-4. Notices and identity
+4. Notices and project identity
 
 You may not remove or alter copyright, license, attribution, project identity, or support notices. You may not use the PulseNet name, logo, or repository identity to imply endorsement, affiliation, or an official modified release.
 
-5. Exceptions
+5. Additional permissions
 
 The copyright holder may grant additional permissions in a separate written agreement. Permissions not expressly granted by this license are reserved.
 
-6. Hosting platform terms and legal exceptions
+6. Legal exceptions and platform terms
 
-This license does not limit rights that must be provided by the hosting platform's terms of service or rights that cannot legally be restricted under applicable law.
+This license does not restrict rights that cannot legally be restricted under applicable law or rights that must be provided by the hosting platform's terms of service.
 
 7. Termination
 
-Your permissions under this license terminate automatically if you violate its terms. On termination, you must stop using and delete unauthorized copies, modifications, and derivative works.
+Your permissions under this license terminate automatically if you violate its terms. On termination, you must stop using PulseNet and delete unauthorized copies, modifications, and derivative works.
 
 8. No warranty
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM OR RELATED TO THE SOFTWARE OR ITS USE.
 
-This is a source-available license and is not an open-source license.
+This is a source-available license. It is not an open-source license and it does not grant permission to modify the project.
