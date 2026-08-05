@@ -44,8 +44,9 @@ jobs:
           foreach ($path in @('Install-PulseNet.ps1', 'Uninstall-PulseNet.ps1')) {
             $tokens = $null
             $errors = $null
+            $resolvedPath = (Resolve-Path $path).Path
             [void][System.Management.Automation.Language.Parser]::ParseFile(
-              (Resolve-Path $path),
+              $resolvedPath,
               [ref]$tokens,
               [ref]$errors
             )
@@ -150,7 +151,7 @@ jobs:
           VERSION: 2.2.1
         run: |
           set -euo pipefail
-          tag="v${VERSION}-build.${GITHUB_RUN_NUMBER}"
+          tag="v${VERSION}-build.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
           gh release create "$tag" dist/* \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
