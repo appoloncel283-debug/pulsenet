@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.2.1 — 2026-08-05
+
+- Fixed SHA-256 installation failures by resolving one exact release tag and downloading every verified asset from that immutable release.
+- Replaced the fragile checksum-line parser with a whitespace-tolerant filename-aware parser.
+- Changed the Windows download button to use GitHub's latest-release asset route.
+- Reworked CI into deterministic formatting, test, vet, cross-build, PowerShell syntax, and checksum-format checks.
+- Reworked release publishing into one verified build job with immutable per-run releases and no force-pushed tags.
+- Clarified the source-available no-modification license and removed remaining MIT references from the current project files.
+
 ## 2.2.0 — 2026-08-05
 
 - Added a guided PowerShell installer for current-user Windows installations.
