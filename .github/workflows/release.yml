@@ -68,6 +68,9 @@ jobs:
             fi
           done
 
+          ./dist/pulsenet-linux-amd64 version
+          ./dist/pulsenet-linux-amd64 db tools --json >/dev/null
+
           cp dist/pulsenet-windows-amd64.exe dist/PulseNet.exe
           cp Install-PulseNet.ps1 dist/Install-PulseNet.ps1
           cp Uninstall-PulseNet.ps1 dist/Uninstall-PulseNet.ps1
@@ -86,10 +89,6 @@ jobs:
           EOF
 
           zip -j dist/PulseNet-Windows.zip dist/PulseNet.exe dist/integrity.json Install-PulseNet.ps1 Uninstall-PulseNet.ps1 README.md LICENSE
-
-          ./dist/pulsenet-linux-amd64 version
-          ./dist/pulsenet-linux-amd64 integrity --json >/dev/null
-          ./dist/pulsenet-linux-amd64 db tools --json >/dev/null
 
       - name: Create and verify checksums
         shell: bash
