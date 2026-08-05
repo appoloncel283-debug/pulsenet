@@ -21,12 +21,14 @@ catch {
 }
 
 $Repository = 'appoloncel283-debug/pulsenet'
+$ProductVersion = '2.4.0'
 $ApiHeaders = @{
     Accept = 'application/vnd.github+json'
-    'User-Agent' = 'PulseNet-Installer/2.2.1'
+    'User-Agent' = "PulseNet-Installer/$ProductVersion"
 }
 $ExecutablePath = Join-Path $InstallDirectory 'PulseNet.exe'
 $UninstallerPath = Join-Path $InstallDirectory 'Uninstall-PulseNet.ps1'
+$IntegrityPath = Join-Path $InstallDirectory 'integrity.json'
 $ShortcutPath = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\PulseNet.lnk'
 $UninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\PulseNet'
 
@@ -165,11 +167,13 @@ function Install-QuickCommands {
     param([string]$Directory)
 
     $commands = [ordered]@{
-        'pn.cmd'      = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" %*' + "`r`n"
-        'pncheck.cmd' = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" diagnose %*' + "`r`n"
-        'pnlogs.cmd'  = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" logs %*' + "`r`n"
-        'pndump.cmd'  = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" dump %*' + "`r`n"
-        'pnwatch.cmd' = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" watch %*' + "`r`n"
+        'pn.cmd'       = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" %*' + "`r`n"
+        'pncheck.cmd'  = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" diagnose %*' + "`r`n"
+        'pnlogs.cmd'   = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" logs %*' + "`r`n"
+        'pndump.cmd'   = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" dump %*' + "`r`n"
+        'pnwatch.cmd'  = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" watch %*' + "`r`n"
+        'pnrouter.cmd' = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" router open %*' + "`r`n"
+        'pnsha.cmd'    = '@echo off' + "`r`n" + '"%~dp0PulseNet.exe" integrity %*' + "`r`n"
     }
 
     foreach ($entry in $commands.GetEnumerator()) {
@@ -180,7 +184,7 @@ function Install-QuickCommands {
 function Remove-QuickCommands {
     param([string]$Directory)
 
-    foreach ($name in @('pn.cmd', 'pncheck.cmd', 'pnlogs.cmd', 'pndump.cmd', 'pnwatch.cmd')) {
+    foreach ($name in @('pn.cmd', 'pncheck.cmd', 'pnlogs.cmd', 'pndump.cmd', 'pnwatch.cmd', 'pnrouter.cmd', 'pnsha.cmd')) {
         Remove-Item -LiteralPath (Join-Path $Directory $name) -Force -ErrorAction SilentlyContinue
     }
 }
@@ -210,7 +214,7 @@ if (-not $Quiet) {
     Write-Host 'The installer pins one official release and verifies every downloaded file with SHA-256.'
     Write-Host ''
     $addToPath = Ask-YesNo 'Add PulseNet to your user PATH so the pulsenet command works everywhere?' $true
-    $installQuickCommands = Ask-YesNo 'Install short commands (pn, pncheck, pnlogs, pndump, pnwatch)?' $false
+    $installQuickCommands = Ask-YesNo 'Install short commands (pn, pncheck, pnlogs, pndump, pnwatch, pnrouter, pnsha)?' $false
     $createShortcut = Ask-YesNo 'Create a Start Menu shortcut?' $true
 }
 
@@ -243,10 +247,12 @@ try {
     Download-File -Uri $uninstallerUrl -Destination $tempUninstaller
 
     $checksumText = Get-Content -LiteralPath $tempChecksums -Raw
+    $expectedExecutableHash = Get-ExpectedHash -ChecksumText $checksumText -FileName 'PulseNet.exe'
+    $expectedUninstallerHash = Get-ExpectedHash -ChecksumText $checksumText -FileName 'Uninstall-PulseNet.ps1'
 
     Write-Step 'Verifying SHA-256 checksums...'
-    Assert-Hash -Path $tempExecutable -ExpectedHash (Get-ExpectedHash -ChecksumText $checksumText -FileName 'PulseNet.exe')
-    Assert-Hash -Path $tempUninstaller -ExpectedHash (Get-ExpectedHash -ChecksumText $checksumText -FileName 'Uninstall-PulseNet.ps1')
+    Assert-Hash -Path $tempExecutable -ExpectedHash $expectedExecutableHash
+    Assert-Hash -Path $tempUninstaller -ExpectedHash $expectedUninstallerHash
 
     $stream = [System.IO.File]::OpenRead($tempExecutable)
     try {
@@ -269,6 +275,17 @@ try {
     New-Item -ItemType Directory -Path $InstallDirectory -Force | Out-Null
     Copy-Item -LiteralPath $tempExecutable -Destination $ExecutablePath -Force
     Copy-Item -LiteralPath $tempUninstaller -Destination $UninstallerPath -Force
+
+    Write-Step 'Writing the startup integrity manifest...'
+    $integrityManifest = [ordered]@{
+        product = 'PulseNet'
+        version = $ProductVersion
+        release_tag = $resolvedTag
+        executable = 'PulseNet.exe'
+        sha256 = $expectedExecutableHash
+        generated_at = (Get-Date).ToUniversalTime().ToString('o')
+    }
+    $integrityManifest | ConvertTo-Json | Set-Content -LiteralPath $IntegrityPath -Encoding ASCII
 
     if ($installQuickCommands) {
         Write-Step 'Installing quick commands...'
@@ -294,7 +311,7 @@ try {
     Write-Step 'Registering the uninstaller for the current user...'
     New-Item -Path $UninstallKey -Force | Out-Null
     New-ItemProperty -Path $UninstallKey -Name DisplayName -Value 'PulseNet' -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $UninstallKey -Name DisplayVersion -Value '2.2.1' -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $UninstallKey -Name DisplayVersion -Value $ProductVersion -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $UninstallKey -Name Publisher -Value 'PulseNet' -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $UninstallKey -Name InstallLocation -Value $InstallDirectory -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $UninstallKey -Name DisplayIcon -Value $ExecutablePath -PropertyType String -Force | Out-Null
@@ -305,22 +322,24 @@ try {
     $manifest = [ordered]@{
         installed_at = (Get-Date).ToString('o')
         release_tag = $resolvedTag
+        version = $ProductVersion
         install_directory = $InstallDirectory
         added_to_path = $addToPath
         quick_commands = $installQuickCommands
         start_menu_shortcut = $createShortcut
     }
-    $manifest | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $InstallDirectory 'installation.json') -Encoding UTF8
+    $manifest | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $InstallDirectory 'installation.json') -Encoding ASCII
 
     Write-Host ''
     Write-Host 'PulseNet was installed successfully.' -ForegroundColor Green
     Write-Host "Release: $resolvedTag"
     Write-Host "Executable: $ExecutablePath"
+    Write-Host "Verified SHA-256: $expectedExecutableHash"
     if ($addToPath) {
         Write-Host 'Open a new terminal and run: pulsenet'
     }
     if ($installQuickCommands) {
-        Write-Host 'Quick commands: pn, pncheck, pnlogs, pndump, pnwatch'
+        Write-Host 'Quick commands: pn, pncheck, pnlogs, pndump, pnwatch, pnrouter, pnsha'
     }
     Write-Host "Uninstall from Windows Settings or run: $UninstallerPath"
 }
