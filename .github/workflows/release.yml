@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: pulsenet-release-${{ github.ref }}
@@ -104,6 +105,7 @@ jobs:
           sha256sum -c SHA256SUMS.txt
 
       - name: Publish immutable GitHub release
+        id: publish
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -112,3 +114,17 @@ jobs:
           set -euo pipefail
           tag="v${VERSION}-build.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
           gh release create "$tag" dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "PulseNet ${VERSION}" --generate-notes
+          release_url="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json url --jq .url)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "url=$release_url" >> "$GITHUB_OUTPUT"
+
+      - name: Report successful publication
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.publish.outputs.tag }}
+          RELEASE_URL: ${{ steps.publish.outputs.url }}
+        run: |
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "Release published ${RELEASE_TAG}" \
+            --body "PulseNet 2.4.0 was built, checksum-verified, and published successfully.\n\n${RELEASE_URL}"
