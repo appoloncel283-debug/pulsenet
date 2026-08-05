@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.0 — 2026-08-05
+
+- Added a guided PowerShell installer for current-user Windows installations.
+- Added SHA-256 verification before the installer accepts downloaded release files.
+- Added optional user PATH setup, Start Menu shortcut creation, and quick commands: `pn`, `pncheck`, `pnlogs`, `pndump`, and `pnwatch`.
+- Added a Windows Settings uninstaller and a standalone PowerShell uninstaller.
+- Removed `publish-github.bat` and `publish-github.sh` from the repository.
+- Replaced the MIT license with a source-available license that does not permit modification or derivative works without prior written permission.
+- Updated release packaging to publish installer scripts and their checksums.
+
 ## 2.1.0 — 2026-08-05
 
 - Added `dump` / `site-dump` for saving a public page body, redacted response headers, metadata, redirects, and SHA-256.
