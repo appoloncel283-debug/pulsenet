@@ -12,11 +12,14 @@ import (
 	"github.com/appoloncel283-debug/pulsenet/internal/ui"
 )
 
-var version = "2.2.0"
+var version = "2.4.0"
 
 func main() {
+	integrityStatus := core.VerifySelfIntegrity()
+	ui.PrintStartupIntegrity(integrityStatus)
+
 	if len(os.Args) == 1 {
-		ui.RunMenu(version)
+		ui.RunMenu(version, integrityStatus)
 		return
 	}
 
@@ -40,6 +43,16 @@ func main() {
 		err = dumpCommand(os.Args[2:])
 	case "logs", "log-viewer":
 		err = logsCommand(os.Args[2:])
+	case "site-diff":
+		err = siteDiffCommand(os.Args[2:])
+	case "site-secrets":
+		err = siteSecretsCommand(os.Args[2:])
+	case "db", "database":
+		err = databaseCommand(os.Args[2:])
+	case "router":
+		err = routerCommand(os.Args[2:])
+	case "integrity", "sha256":
+		err = integrityCommand(os.Args[2:], integrityStatus)
 	case "trace":
 		err = traceCommand(os.Args[2:])
 	case "support", "donate":
@@ -309,7 +322,7 @@ func splitLeadingTarget(args []string) (string, []string) {
 }
 
 func printHelp() {
-	fmt.Printf(`PulseNet %s — practical network diagnostics in one binary
+	fmt.Printf(`PulseNet %s — network, website, database, and router maintenance tools
 
 Usage:
   pulsenet                                  interactive interface
@@ -322,19 +335,26 @@ Usage:
   pulsenet watch <url>                       availability monitor with optional CSV
   pulsenet dump <url>                        save a public page snapshot to disk
   pulsenet logs <log-file>                   view, filter, and follow local website logs
+  pulsenet site-diff                         compare two local site dumps
+  pulsenet site-secrets                      scan a local dump for exposed secrets
+  pulsenet db <subcommand>                   authorized database backup toolkit
+  pulsenet router info                       detect the local gateway and admin page
+  pulsenet router open                       open the detected admin page in a browser
+  pulsenet integrity                         show executable SHA-256 verification
   pulsenet trace <host>                      route trace using the platform tool
   pulsenet support                           project support address
 
-Examples:
-  pulsenet diagnose example.com --report report.txt --json report.json
-  pulsenet dump https://example.com --output snapshots/example
-  pulsenet logs /var/log/nginx/access.log --status 5xx --follow
-  pulsenet logs C:\\nginx\\logs\\error.log --level error --lines 200
-  pulsenet dns example.com --json
-  pulsenet headers https://example.com
-  pulsenet ports 192.168.1.10 --ports 22,80,443,8000-8010
-  pulsenet benchmark https://example.com --requests 100 --concurrency 10
-  pulsenet watch https://example.com --interval 10s --csv uptime.csv
+Database examples:
+  pulsenet db tools
+  pulsenet db schema --engine sqlite --database app.db --output schema.sql
+  pulsenet db backup --engine postgres --database postgresql://user@localhost/app --output app.dump
+  pulsenet db verify --engine postgres --file app.dump
+
+Router assistant:
+  pulsenet router info
+  pulsenet router open
+
+PulseNet does not read, guess, extract, or submit router passwords. The browser may use credentials already saved in its own password manager.
 
 Run "pulsenet <command> -h" for command-specific flags.
 `, version)
