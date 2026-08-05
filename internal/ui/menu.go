@@ -10,11 +10,12 @@ import (
 	"github.com/appoloncel283-debug/pulsenet/internal/core"
 )
 
-func RunMenu(version string) {
+func RunMenu(version string, integrity core.IntegrityStatus) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		clear()
 		printLogo(version)
+		PrintIntegritySummary(integrity)
 		fmt.Println(Color(bold, "  1") + "  Full diagnosis")
 		fmt.Println(Color(bold, "  2") + "  Availability monitor")
 		fmt.Println(Color(bold, "  3") + "  DNS records and resolver comparison")
@@ -24,7 +25,10 @@ func RunMenu(version string) {
 		fmt.Println(Color(bold, "  7") + "  HTTP benchmark")
 		fmt.Println(Color(bold, "  8") + "  Site dump")
 		fmt.Println(Color(bold, "  9") + "  Website log viewer")
-		fmt.Println(Color(bold, " 10") + "  Support the project")
+		fmt.Println(Color(bold, " 10") + "  Database toolkit")
+		fmt.Println(Color(bold, " 11") + "  Router assistant")
+		fmt.Println(Color(bold, " 12") + "  Integrity details")
+		fmt.Println(Color(bold, " 13") + "  Support the project")
 		fmt.Println(Color(bold, "  0") + "  Exit")
 		fmt.Print("\nSelect an action: ")
 		switch readLine(reader) {
@@ -77,6 +81,14 @@ func RunMenu(version string) {
 			}
 			pause(reader)
 		case "10":
+			RunDatabaseMenu(reader)
+		case "11":
+			RunRouterMenu(reader)
+			pause(reader)
+		case "12":
+			PrintIntegrityStatus(integrity, false)
+			pause(reader)
+		case "13":
 			PrintSupport()
 			pause(reader)
 		case "0", "q", "quit", "exit":
