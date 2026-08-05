@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/appoloncel283-debug/pulsenet/internal/core"
 )
 
 func RunMenu(version string) {
@@ -20,7 +22,9 @@ func RunMenu(version string) {
 		fmt.Println(Color(bold, "  5") + "  Security header audit")
 		fmt.Println(Color(bold, "  6") + "  Explicit port check")
 		fmt.Println(Color(bold, "  7") + "  HTTP benchmark")
-		fmt.Println(Color(bold, "  8") + "  Support the project")
+		fmt.Println(Color(bold, "  8") + "  Site dump")
+		fmt.Println(Color(bold, "  9") + "  Website log viewer")
+		fmt.Println(Color(bold, " 10") + "  Support the project")
 		fmt.Println(Color(bold, "  0") + "  Exit")
 		fmt.Print("\nSelect an action: ")
 		switch readLine(reader) {
@@ -57,6 +61,22 @@ func RunMenu(version string) {
 			RunBenchmark(url, "GET", 20, 4, 10*time.Second, false, false)
 			pause(reader)
 		case "8":
+			target := ask(reader, "Website URL: ")
+			if target != "" {
+				if err := RunSiteDump(target, "", 16*1024*1024, 15*time.Second, false, false); err != nil {
+					PrintError(err)
+				}
+			}
+			pause(reader)
+		case "9":
+			path := ask(reader, "Local log file: ")
+			if path != "" {
+				if err := RunLogs(path, 100, false, 500*time.Millisecond, core.LogFilter{}, false); err != nil {
+					PrintError(err)
+				}
+			}
+			pause(reader)
+		case "10":
 			PrintSupport()
 			pause(reader)
 		case "0", "q", "quit", "exit":
