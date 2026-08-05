@@ -69,7 +69,12 @@ jobs:
 
             if [ "${GOARCH}" = "amd64" ]; then
               cp "dist/${OUTPUT}" "dist/PulseNet.exe"
-              zip -j "dist/PulseNet-Windows.zip" "dist/PulseNet.exe" README.md LICENSE
+              zip -j "dist/PulseNet-Windows.zip" \
+                "dist/PulseNet.exe" \
+                Install-PulseNet.ps1 \
+                Uninstall-PulseNet.ps1 \
+                README.md \
+                LICENSE
             fi
           else
             tar -czf "dist/${BASE}.tar.gz" -C dist "${OUTPUT}"
@@ -94,6 +99,11 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Add installer scripts
+        run: |
+          cp Install-PulseNet.ps1 dist/Install-PulseNet.ps1
+          cp Uninstall-PulseNet.ps1 dist/Uninstall-PulseNet.ps1
+
       - name: Create checksums
         run: |
           cd dist
@@ -104,13 +114,13 @@ jobs:
           cat > RELEASE_NOTES.md <<'NOTES'
           ## Downloads
 
-          **Most Windows computers:** download `PulseNet.exe` and open it.
+          **Recommended Windows setup:** download `Install-PulseNet.ps1`, inspect it, and run it with PowerShell. The installer verifies the official SHA-256 checksums, installs for the current user, and offers optional PATH, quick-command, and Start Menu setup.
 
-          PulseNet 2.1 adds public page snapshots and a local website-log viewer with filtering and live follow mode.
+          **Portable Windows app:** download `PulseNet.exe` and open it directly.
 
-          A packaged Windows ZIP, architecture-specific builds, Linux builds, macOS builds, and SHA-256 checksums are also attached below.
+          PulseNet includes public page snapshots and a local website-log viewer with filtering and live follow mode.
 
-          The complete source code remains available in the repository for modification and custom builds.
+          Architecture-specific Windows, Linux, and macOS builds and SHA-256 checksums are attached below. Source code is available for inspection and unmodified personal or internal builds. Modification and redistribution require prior written permission under the repository license.
 
           > PulseNet is currently unsigned. Windows SmartScreen may show an unknown-publisher warning.
           NOTES
